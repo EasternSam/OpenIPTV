@@ -121,6 +121,7 @@ function serveStatic(req, res) {
     let filePath = req.url.split('?')[0];
     if (filePath === '/') filePath = '/index.html';
     if (filePath === '/remote') filePath = '/remote.html';
+    if (filePath === '/panel') filePath = '/panel.html';
 
     const safePath = path.normalize(filePath).replace(/^(\.\.[\/\\])+/, '');
     const fullPath = path.join(STATIC_DIR, safePath);

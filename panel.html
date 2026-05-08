@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración M3U - OpenIPTV</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="css/panel.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="4" y="8" width="56" height="40" rx="4" stroke="currentColor" stroke-width="3" fill="none"/>
+                        <polygon points="26,18 26,38 42,28" fill="currentColor"/>
+                        <rect x="20" y="52" width="24" height="3" rx="1.5" fill="currentColor" opacity="0.6"/>
+                    </svg>
+                </div>
+                <h2>Open<span>IPTV</span></h2>
+            </div>
+            
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                    Gestión de Playlists
+                </a>
+                <a href="/" class="nav-item" target="_blank">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                        <line x1="8" y1="21" x2="16" y2="21"/>
+                        <line x1="12" y1="17" x2="12" y2="21"/>
+                    </svg>
+                    Abrir Reproductor
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <h1>Panel de Gestión M3U</h1>
+                    <p>Administra las listas globales del servidor</p>
+                </div>
+                <div class="topbar-right">
+                    <button id="btn-add-playlist" class="btn-primary">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        Añadir Playlist
+                    </button>
+                </div>
+            </header>
+
+            <div class="dashboard-stats">
+                <div class="stat-card">
+                    <div class="stat-icon">📺</div>
+                    <div class="stat-info">
+                        <h3>Listas Activas</h3>
+                        <p id="stat-count">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🌟</div>
+                    <div class="stat-info">
+                        <h3>Lista por Defecto</h3>
+                        <p id="stat-default">Ninguna</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-section">
+                <div class="section-header">
+                    <h2>Playlists Guardadas en el Servidor</h2>
+                    <button id="btn-refresh" class="btn-icon" title="Actualizar">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                            <polyline points="23 4 23 10 17 10"/>
+                            <polyline points="1 20 1 14 7 14"/>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="playlist-grid" id="playlist-grid">
+                    <!-- Playlists will be injected here -->
+                    <div class="loading-state">
+                        <div class="spinner"></div>
+                        <p>Cargando playlists...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Modal -->
+    <div id="modal-add" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2>Añadir Nueva M3U</h2>
+                <button class="btn-close" id="btn-close-modal">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nombre de la Lista (Opcional)</label>
+                    <input type="text" id="input-pl-name" placeholder="Ej: Películas y Series">
+                </div>
+                <div class="form-group">
+                    <label>URL de la Playlist (*)</label>
+                    <input type="url" id="input-pl-url" placeholder="https://ejemplo.com/lista.m3u">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="btn-cancel">Cancelar</button>
+                <button class="btn-primary" id="btn-save">Guardar Playlist</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="js/panel.js"></script>
+</body>
+</html>
