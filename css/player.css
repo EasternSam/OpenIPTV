@@ -1,0 +1,411 @@
+/* ══════════════════════════════════════════════════════════════
+   OpenIPTV - Player Styles
+   Video player overlay controls optimized for TV remote
+   ══════════════════════════════════════════════════════════════ */
+
+/* ─── Video Container ─── */
+.video-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    background: #000;
+}
+
+.video-container video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000;
+}
+
+/* ─── CSS Fullscreen (fallback when native API blocked) ─── */
+body.css-fullscreen .video-container {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 9999 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+}
+
+body.css-fullscreen .top-bar,
+body.css-fullscreen .sidebar,
+body.css-fullscreen .remote-indicator {
+    display: none !important;
+}
+
+body.css-fullscreen .main-content {
+    padding: 0 !important;
+}
+
+body.css-fullscreen .player-area {
+    width: 100vw !important;
+    height: 100vh !important;
+}
+
+/* ─── Player Overlay ─── */
+.player-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity var(--transition-normal);
+    z-index: 10;
+}
+
+.player-overlay.hidden-overlay {
+    opacity: 0;
+}
+
+.player-overlay.hidden-overlay .channel-info-banner,
+.player-overlay.hidden-overlay .bottom-controls {
+    transform: translateY(-100%) ;
+    opacity: 0;
+}
+
+.player-overlay.hidden-overlay .bottom-controls {
+    transform: translateY(100%);
+}
+
+/* ─── Channel Info Banner (Top) ─── */
+.channel-info-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 28px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 70%, transparent 100%);
+    pointer-events: auto;
+    transition: transform var(--transition-slow), opacity var(--transition-slow);
+}
+
+.channel-info-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.channel-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-sm);
+    object-fit: contain;
+    background: rgba(255,255,255,0.1);
+}
+
+.channel-info-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.channel-num {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent-tertiary);
+    font-variant-numeric: tabular-nums;
+}
+
+.channel-name-big {
+    font-size: 22px;
+    font-weight: 700;
+    color: white;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+.channel-group-tag {
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: rgba(255,255,255,0.1);
+    padding: 2px 10px;
+    border-radius: 100px;
+    width: fit-content;
+}
+
+.channel-info-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.player-clock {
+    font-size: 24px;
+    font-weight: 600;
+    color: white;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+/* Signal Quality Indicator */
+.signal-quality {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 20px;
+}
+
+.signal-bar {
+    width: 4px;
+    background: var(--success);
+    border-radius: 1px;
+    transition: height var(--transition-normal), background var(--transition-normal);
+}
+
+.signal-bar:nth-child(1) { height: 5px; }
+.signal-bar:nth-child(2) { height: 10px; }
+.signal-bar:nth-child(3) { height: 15px; }
+.signal-bar:nth-child(4) { height: 20px; }
+
+.signal-quality.poor .signal-bar { background: var(--danger); }
+.signal-quality.poor .signal-bar:nth-child(3),
+.signal-quality.poor .signal-bar:nth-child(4) { background: var(--text-muted); }
+
+.signal-quality.medium .signal-bar { background: var(--warning); }
+.signal-quality.medium .signal-bar:nth-child(4) { background: var(--text-muted); }
+
+/* ─── Center Controls ─── */
+.center-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+}
+
+.control-btn-large {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.control-btn-large:hover,
+.control-btn-large:focus {
+    background: rgba(99, 102, 241, 0.4);
+    border-color: var(--accent-primary);
+    transform: scale(1.1);
+}
+
+/* ─── Bottom Controls ─── */
+.bottom-controls {
+    padding: 20px 28px;
+    background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 70%, transparent 100%);
+    pointer-events: auto;
+    transition: transform var(--transition-slow), opacity var(--transition-slow);
+}
+
+.controls-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.controls-spacer {
+    flex: 1;
+}
+
+.control-btn {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-sm);
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.control-btn:hover,
+.control-btn:focus {
+    background: rgba(99, 102, 241, 0.3);
+    border-color: var(--accent-primary);
+    color: white;
+    transform: scale(1.05);
+}
+
+/* Volume Control */
+.volume-control {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.volume-slider-wrap {
+    width: 0;
+    overflow: hidden;
+    transition: width var(--transition-normal);
+}
+
+.volume-control:hover .volume-slider-wrap,
+.volume-control:focus-within .volume-slider-wrap {
+    width: 100px;
+}
+
+.volume-slider {
+    width: 100px;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+}
+
+.volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: var(--accent-primary);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
+}
+
+/* ─── Player Loading ─── */
+.player-loading {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 20;
+    gap: 20px;
+}
+
+.spinner-ring {
+    width: 56px;
+    height: 56px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-top-color: var(--accent-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+.player-loading p {
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* ─── Player Error ─── */
+.player-error {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 20;
+    gap: 16px;
+}
+
+.player-error p {
+    color: var(--danger);
+    font-size: 16px;
+    font-weight: 500;
+}
+
+/* ═══════════════════════════════════════════════════════
+   TV POINTER OPTIMIZATIONS - Player Controls
+   ═══════════════════════════════════════════════════════ */
+
+@media (min-width: 1200px) and (min-height: 600px) {
+
+    .channel-info-banner {
+        padding: 28px 36px;
+    }
+
+    .channel-logo {
+        width: 56px;
+        height: 56px;
+    }
+
+    .channel-num {
+        font-size: 16px;
+    }
+
+    .channel-name-big {
+        font-size: 28px;
+    }
+
+    .channel-group-tag {
+        font-size: 14px;
+        padding: 4px 14px;
+    }
+
+    .player-clock {
+        font-size: 30px;
+    }
+
+    /* Bigger control buttons */
+    .control-btn {
+        width: 56px;
+        height: 56px;
+        border-radius: var(--radius-md);
+    }
+
+    .control-btn:hover {
+        background: var(--accent-primary);
+        color: white;
+        transform: scale(1.15);
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .control-btn-large {
+        width: 100px;
+        height: 100px;
+    }
+
+    .controls-row {
+        gap: 12px;
+    }
+
+    .bottom-controls {
+        padding: 28px 36px;
+    }
+
+    /* Volume always visible on TV */
+    .volume-slider-wrap {
+        width: 120px;
+    }
+
+    .volume-slider {
+        width: 120px;
+        height: 6px;
+    }
+
+    .volume-slider::-webkit-slider-thumb {
+        width: 20px;
+        height: 20px;
+    }
+
+    /* Loading spinner bigger */
+    .spinner-ring {
+        width: 72px;
+        height: 72px;
+    }
+
+    .player-loading p {
+        font-size: 18px;
+    }
+
+    .player-error p {
+        font-size: 20px;
+    }
+}

@@ -1,0 +1,165 @@
+/* ══════════════════════════════════════════════════════════════
+   OpenIPTV - Animations
+   Optimized for Samsung Tizen WebKit (hardware accelerated)
+   ══════════════════════════════════════════════════════════════ */
+
+/* ─── Keyframes ─── */
+@keyframes logoPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.8; }
+}
+
+@keyframes loadProgress {
+    0% { width: 0%; }
+    30% { width: 40%; }
+    60% { width: 70%; }
+    100% { width: 100%; }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes floatUp {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+    from { 
+        opacity: 0; 
+        transform: translateY(20px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+@keyframes fadeInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+@keyframes pulseGlow {
+    0%, 100% { 
+        box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); 
+    }
+    50% { 
+        box-shadow: 0 0 0 8px rgba(99, 102, 241, 0); 
+    }
+}
+
+/* ─── Animation Utility Classes ─── */
+.animate-fade-in {
+    animation: fadeIn 0.3s ease forwards;
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.4s ease forwards;
+}
+
+.animate-fade-in-left {
+    animation: fadeInLeft 0.3s ease forwards;
+}
+
+.animate-scale-in {
+    animation: scaleIn 0.3s ease forwards;
+}
+
+.animate-slide-in-right {
+    animation: slideInRight 0.3s ease forwards;
+}
+
+/* ─── Channel Item Staggered Entry ─── */
+.channel-item {
+    animation: fadeInLeft 0.2s ease forwards;
+    opacity: 0;
+}
+
+.channel-item:nth-child(1) { animation-delay: 0ms; }
+.channel-item:nth-child(2) { animation-delay: 20ms; }
+.channel-item:nth-child(3) { animation-delay: 40ms; }
+.channel-item:nth-child(4) { animation-delay: 60ms; }
+.channel-item:nth-child(5) { animation-delay: 80ms; }
+.channel-item:nth-child(6) { animation-delay: 100ms; }
+.channel-item:nth-child(7) { animation-delay: 120ms; }
+.channel-item:nth-child(8) { animation-delay: 140ms; }
+.channel-item:nth-child(9) { animation-delay: 160ms; }
+.channel-item:nth-child(10) { animation-delay: 180ms; }
+.channel-item:nth-child(n+11) { animation-delay: 200ms; }
+
+/* ─── Modal Animations ─── */
+.modal:not(.hidden) .modal-backdrop {
+    animation: fadeIn 0.2s ease forwards;
+}
+
+.modal:not(.hidden) .modal-content {
+    animation: scaleIn 0.3s ease forwards;
+}
+
+/* ─── Loading Skeleton ─── */
+.skeleton {
+    background: linear-gradient(
+        90deg,
+        var(--bg-tertiary) 25%,
+        rgba(99, 102, 241, 0.1) 50%,
+        var(--bg-tertiary) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+    border-radius: var(--radius-sm);
+}
+
+/* ─── Focus Pulse (for TV navigation) ─── */
+.focusable:focus {
+    animation: pulseGlow 1.5s ease infinite;
+}
+
+/* ─── Reduce Motion ─── */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

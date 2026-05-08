@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#06061a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>OpenIPTV Remote</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/remote.css">
+</head>
+<body>
+
+    <!-- ═══════ PAIRING SCREEN ═══════ -->
+    <div id="screen-pair" class="screen active">
+        <div class="pair-container">
+            <div class="pair-logo">
+                <svg viewBox="0 0 64 64" fill="none" width="48" height="48">
+                    <defs><linearGradient id="rg" x1="0" y1="0" x2="64" y2="64">
+                        <stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#a78bfa"/>
+                    </linearGradient></defs>
+                    <rect x="4" y="8" width="56" height="40" rx="4" stroke="url(#rg)" stroke-width="3" fill="none"/>
+                    <polygon points="26,18 26,38 42,28" fill="url(#rg)"/>
+                    <rect x="20" y="52" width="24" height="3" rx="1.5" fill="url(#rg)" opacity="0.6"/>
+                </svg>
+                <h1>Open<span>IPTV</span></h1>
+                <p class="pair-sub">CONTROL REMOTO</p>
+            </div>
+            <div class="pair-form">
+                <label>Ingresa el código de tu TV</label>
+                <div class="code-inputs">
+                    <input type="tel" maxlength="1" class="code-digit" data-index="0" inputmode="numeric" autocomplete="off">
+                    <input type="tel" maxlength="1" class="code-digit" data-index="1" inputmode="numeric" autocomplete="off">
+                    <input type="tel" maxlength="1" class="code-digit" data-index="2" inputmode="numeric" autocomplete="off">
+                    <input type="tel" maxlength="1" class="code-digit" data-index="3" inputmode="numeric" autocomplete="off">
+                </div>
+                <button id="btn-connect" class="btn-connect" disabled>Conectar</button>
+                <p id="pair-error" class="pair-error"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════ REMOTE CONTROL SCREEN ═══════ -->
+    <div id="screen-remote" class="screen">
+
+        <!-- Header Bar -->
+        <header class="r-header">
+            <div class="r-header-left">
+                <span class="r-dot connected"></span>
+                <span class="r-header-label" id="r-status-text">Conectado</span>
+            </div>
+            <div class="r-header-center" id="r-now-playing">
+                <span id="r-channel-name">—</span>
+            </div>
+            <button id="btn-disconnect" class="r-disconnect">✕</button>
+        </header>
+
+        <!-- Mode Tabs -->
+        <nav class="r-modes">
+            <button class="r-mode active" data-mode="control">🎮 Control</button>
+            <button class="r-mode" data-mode="channels">📺 Canales</button>
+            <button class="r-mode" data-mode="keyboard">⌨️ Teclado</button>
+        </nav>
+
+        <!-- ═══ MODE: CONTROL (D-Pad + Playback) ═══ -->
+        <div id="mode-control" class="r-mode-panel active">
+
+            <!-- D-Pad -->
+            <div class="dpad-wrap">
+                <div class="dpad">
+                    <button class="dp dp-up" data-cmd="navigate" data-dir="up" aria-label="Arriba">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28"><path d="M12 4l-8 8h16z"/></svg>
+                    </button>
+                    <button class="dp dp-left" data-cmd="navigate" data-dir="left" aria-label="Izquierda">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28"><path d="M4 12l8-8v16z"/></svg>
+                    </button>
+                    <button class="dp dp-ok" data-cmd="enter" aria-label="OK">OK</button>
+                    <button class="dp dp-right" data-cmd="navigate" data-dir="right" aria-label="Derecha">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28"><path d="M20 12l-8-8v16z"/></svg>
+                    </button>
+                    <button class="dp dp-down" data-cmd="navigate" data-dir="down" aria-label="Abajo">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28"><path d="M12 20l8-8H4z"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Back / Home Row -->
+            <div class="r-row-actions">
+                <button class="r-act" data-cmd="back">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="20" height="20"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                    <span>Atrás</span>
+                </button>
+                <button class="r-act" data-cmd="toggle-sidebar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+                    </svg>
+                    <span>Menú</span>
+                </button>
+                <button class="r-act" data-cmd="fullscreen">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
+                        <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
+                    </svg>
+                    <span>Full</span>
+                </button>
+                <button class="r-act" data-cmd="favorite">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/>
+                    </svg>
+                    <span>Fav</span>
+                </button>
+            </div>
+
+            <!-- Playback + Volume -->
+            <div class="r-playback">
+                <div class="r-pbl">
+                    <button class="r-ch-btn" data-cmd="channel-down">CH−</button>
+                    <span class="r-pbl-label">Canal</span>
+                    <button class="r-ch-btn" data-cmd="channel-up">CH+</button>
+                </div>
+                <button class="r-play" data-cmd="play-pause" aria-label="Play/Pause">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="36" height="36"><polygon points="6,3 20,12 6,21"/></svg>
+                </button>
+                <div class="r-pbl">
+                    <button class="r-vol-btn" data-cmd="volume-down">VOL−</button>
+                    <button class="r-mute-btn" data-cmd="mute" aria-label="Mute">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                        </svg>
+                    </button>
+                    <button class="r-vol-btn" data-cmd="volume-up">VOL+</button>
+                </div>
+            </div>
+
+            <!-- Number Pad (collapsible) -->
+            <details class="r-numpad-wrap">
+                <summary class="r-numpad-toggle">Teclado Numérico</summary>
+                <div class="r-numpad">
+                    <button class="r-num" data-cmd="number" data-num="1">1</button>
+                    <button class="r-num" data-cmd="number" data-num="2">2</button>
+                    <button class="r-num" data-cmd="number" data-num="3">3</button>
+                    <button class="r-num" data-cmd="number" data-num="4">4</button>
+                    <button class="r-num" data-cmd="number" data-num="5">5</button>
+                    <button class="r-num" data-cmd="number" data-num="6">6</button>
+                    <button class="r-num" data-cmd="number" data-num="7">7</button>
+                    <button class="r-num" data-cmd="number" data-num="8">8</button>
+                    <button class="r-num" data-cmd="number" data-num="9">9</button>
+                    <button class="r-num r-num-special" data-cmd="load-url">📋</button>
+                    <button class="r-num" data-cmd="number" data-num="0">0</button>
+                    <button class="r-num r-num-special" data-cmd="settings">⚙️</button>
+                </div>
+            </details>
+        </div>
+
+        <!-- ═══ MODE: CHANNELS ═══ -->
+        <div id="mode-channels" class="r-mode-panel">
+            <div class="r-ch-header">
+                <input type="text" id="r-ch-search" placeholder="Buscar canal..." autocomplete="off">
+            </div>
+            <div class="r-ch-list" id="r-ch-list">
+                <p class="r-ch-empty">Los canales aparecerán aquí</p>
+            </div>
+        </div>
+
+        <!-- ═══ MODE: KEYBOARD ═══ -->
+        <div id="mode-keyboard" class="r-mode-panel">
+            <div class="r-kb-panel">
+                <p class="r-kb-hint">Escribe aquí y se enviará a la TV</p>
+                <textarea id="r-kb-input" class="r-kb-input" placeholder="Escribe texto..." rows="3" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
+                <div class="r-kb-actions">
+                    <button class="r-kb-btn" id="r-kb-send">Enviar texto</button>
+                    <button class="r-kb-btn r-kb-clear" id="r-kb-clear">Borrar</button>
+                    <button class="r-kb-btn r-kb-enter" id="r-kb-enter">Enter ↵</button>
+                </div>
+                <div class="r-kb-quick">
+                    <p>Accesos rápidos:</p>
+                    <div class="r-kb-shortcuts">
+                        <button class="r-kb-sc" data-cmd="type-key" data-key="Backspace">⌫</button>
+                        <button class="r-kb-sc" data-cmd="type-key" data-key="Tab">Tab</button>
+                        <button class="r-kb-sc" data-cmd="type-key" data-key="Escape">Esc</button>
+                        <button class="r-kb-sc" data-cmd="type-key" data-key=" ">Space</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="js/remote.js"></script>
+</body>
+</html>
