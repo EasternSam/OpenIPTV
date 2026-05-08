@@ -11,6 +11,7 @@ const App = {
     groups: [],
     currentChannelIndex: -1,
     currentCategory: 'all',
+    currentPlaylist: 'all',
     currentGroup: null,
     isLoading: false,
     loadedPlaylists: new Map(), // url -> { channels, groups, name }
@@ -117,9 +118,11 @@ const App = {
             document.getElementById('file-input')?.click();
         });
 
-        document.getElementById('file-input')?.addEventListener('change', (e) => {
+        document.getElementById('file-input')?.addEventListener('change', async (e) => {
             if (e.target.files.length > 0) {
-                this._loadFromFile(e.target.files[0]);
+                for (let i = 0; i < e.target.files.length; i++) {
+                    await this._loadFromFile(e.target.files[i]);
+                }
                 e.target.value = '';
             }
         });
@@ -241,6 +244,14 @@ const App = {
             this._filterChannels(e.target.value);
         });
 
+        // ─── Playlist Filter ───
+        document.getElementById('playlist-filter')?.addEventListener('change', (e) => {
+            this.currentPlaylist = e.target.value;
+            this.currentGroup = null; // Reset group selection when playlist changes
+            this._renderGroups();
+            this._renderChannels();
+        });
+
         // ─── Category Tabs ───
         document.querySelectorAll('.category-tab').forEach(tab => {
             tab.addEventListener('click', () => {
@@ -260,20 +271,29 @@ const App = {
        PLAYLIST LOADING
        ═══════════════════════════════════════ */
 
-    async loadPlaylistFromUrl(url, silent = false) {
+    async loadPlaylistFromUrl(urlStr, silent = false) {
         if (this.isLoading) return;
         this.isLoading = true;
 
-        if (!silent) this._toast('⏳ Cargando playlist...');
+        const urls = urlStr.split(',').map(u => u.trim()).filter(u => u);
+        if (urls.length === 0) {
+            this.isLoading = false;
+            return;
+        }
+
+        if (!silent) this._toast(urls.length > 1 ? '⏳ Cargando playlists...' : '⏳ Cargando playlist...');
 
         try {
-            await this._addPlaylist(url, null, silent);
+            for (const url of urls) {
+                await this._addPlaylist(url, null, silent);
+                // Save playlist
+                Storage.savePlaylist(url);
+                Storage.setLastPlaylist(url);
+            }
+            
             this._mergeAllPlaylists();
-
-            // Save playlist
-            Storage.savePlaylist(url);
-            Storage.setLastPlaylist(url);
             this._renderSavedPlaylists();
+            this._updatePlaylistFilterUI();
 
             if (!silent) {
                 this._toast(`✅ ${this.channels.length} canales de ${this.loadedPlaylists.size} lista(s)`);
@@ -331,6 +351,7 @@ const App = {
         this._renderGroups();
         this._renderChannels();
         this._updateChannelCount();
+        this._updatePlaylistFilterUI();
         document.getElementById('empty-state')?.classList.add('hidden');
     },
 
@@ -338,6 +359,7 @@ const App = {
     _removeLoadedPlaylist(url) {
         this.loadedPlaylists.delete(url);
         Storage.removePlaylist(url);
+        if (this.currentPlaylist === url) this.currentPlaylist = 'all';
         this._mergeAllPlaylists();
         this._renderSavedPlaylists();
         this._toast('Lista eliminada');
@@ -451,6 +473,11 @@ const App = {
             channels.sort((a, b) => recents.indexOf(a.url) - recents.indexOf(b.url));
         }
 
+        // Apply playlist filter
+        if (this.currentPlaylist && this.currentPlaylist !== 'all') {
+            channels = channels.filter(c => c._source === this.currentPlaylist);
+        }
+
         // Apply group filter
         if (this.currentGroup) {
             channels = channels.filter(c => c.group === this.currentGroup);
@@ -525,7 +552,22 @@ const App = {
 
         container.innerHTML = '';
 
-        this.groups.forEach(group => {
+        // Determine which groups to show based on current filter
+        let currentChannels = this.channels;
+        if (this.currentPlaylist && this.currentPlaylist !== 'all') {
+            currentChannels = this.channels.filter(c => c._source === this.currentPlaylist);
+        }
+        
+        const groupSet = new Set();
+        currentChannels.forEach(c => { if (c.group) groupSet.add(c.group); });
+        const visibleGroups = [...groupSet].sort();
+
+        // If current group is no longer visible, reset it
+        if (this.currentGroup && !visibleGroups.includes(this.currentGroup)) {
+            this.currentGroup = null;
+        }
+
+        visibleGroups.forEach(group => {
             const btn = document.createElement('button');
             btn.className = 'group-tag focusable';
             btn.dataset.focusGroup = 'sidebar';
@@ -594,6 +636,7 @@ const App = {
                 // Toggle: load or unload this playlist
                 if (isLoaded) {
                     this.loadedPlaylists.delete(pl.url);
+                    if (this.currentPlaylist === pl.url) this.currentPlaylist = 'all';
                     this._mergeAllPlaylists();
                     this._renderSavedPlaylists();
                     this._toast(`Lista "${pl.name}" desactivada`);
@@ -691,6 +734,31 @@ const App = {
             );
         }
         this._renderChannels();
+    },
+
+    _updatePlaylistFilterUI() {
+        const container = document.getElementById('playlist-filter-container');
+        const select = document.getElementById('playlist-filter');
+        if (!container || !select) return;
+
+        if (this.loadedPlaylists.size > 1) {
+            container.style.display = 'block';
+            select.innerHTML = '<option value="all">Todas las listas</option>';
+            for (const [url, pl] of this.loadedPlaylists) {
+                const opt = document.createElement('option');
+                opt.value = url;
+                opt.textContent = pl.name;
+                select.appendChild(opt);
+            }
+            // Ensure the select matches the current playlist state, if the current playlist was removed, set to all
+            if (!this.loadedPlaylists.has(this.currentPlaylist)) {
+                this.currentPlaylist = 'all';
+            }
+            select.value = this.currentPlaylist;
+        } else {
+            container.style.display = 'none';
+            this.currentPlaylist = 'all';
+        }
     },
 
     /* ═══════════════════════════════════════

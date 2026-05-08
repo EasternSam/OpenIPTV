@@ -105,6 +105,13 @@
                     </div>
                 </div>
 
+                <!-- Playlist Filter -->
+                <div class="sidebar-playlist-filter" style="padding: 0 20px 10px; display: none;" id="playlist-filter-container">
+                    <select id="playlist-filter" class="focusable" data-focus-group="sidebar" style="width: 100%; padding: 8px; border-radius: 6px; background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1); outline: none; font-family: inherit; font-size: 14px; cursor: pointer;">
+                        <option value="all">Todas las listas</option>
+                    </select>
+                </div>
+
                 <!-- Category Tabs -->
                 <nav id="category-nav" class="category-nav">
                     <button class="category-tab focusable active" data-focus-group="sidebar" data-category="all" tabindex="0">
@@ -394,7 +401,7 @@
     </div>
 
     <!-- Hidden file input for M3U file loading -->
-    <input type="file" id="file-input" accept=".m3u,.m3u8,.txt" style="display:none">
+    <input type="file" id="file-input" accept=".m3u,.m3u8,.txt" multiple style="display:none">
 
     <!-- Toast Notification -->
     <div id="toast" class="toast hidden">
