@@ -1,0 +1,4 @@
+RewriteEngine On
+
+# Redirigir /remote a /remote.html
+RewriteRule ^remote$ /remote.html [L]
