@@ -41,11 +41,30 @@ const Player = {
         this.retryCount = 0;
         this._showLoading(true);
 
-        const url = channel.url.trim();
+        let url = channel.url.trim();
+        let headers = {};
+
+        // Extraer encabezados estilo IPTV (ej. url|User-Agent=...&Referer=...)
+        if (url.includes('|')) {
+            const parts = url.split('|');
+            url = parts[0];
+            const headerString = parts[1];
+            
+            // Parseamos los headers como query params (Header1=Value1&Header2=Value2)
+            const params = new URLSearchParams(headerString);
+            for (const [key, value] of params.entries()) {
+                // Mapear nombres comunes de IPTV al header HTTP real
+                let headerName = key;
+                if (key.toLowerCase() === 'user-agent') headerName = 'User-Agent';
+                if (key.toLowerCase() === 'referer') headerName = 'Referer';
+                
+                headers[headerName] = value;
+            }
+        }
 
         // Determine stream type
         if (this._isHLS(url)) {
-            this._playHLS(url);
+            this._playHLS(url, headers);
         } else {
             this._playDirect(url);
         }
@@ -56,9 +75,9 @@ const Player = {
     },
 
     /* ─── Play HLS Stream ─── */
-    _playHLS(url) {
+    _playHLS(url, headers = {}) {
         if (Hls.isSupported()) {
-            this.hls = new Hls({
+            const hlsConfig = {
                 maxBufferLength: this._getBufferSize(),
                 maxMaxBufferLength: this._getBufferSize() * 2,
                 maxBufferSize: 60 * 1000 * 1000, // 60MB
@@ -76,7 +95,22 @@ const Player = {
                 abrEwmaDefaultEstimate: 500000,
                 abrBandWidthUpFactor: 0.7,
                 abrBandWidthFactor: 0.95,
-            });
+            };
+
+            // Inject Custom HTTP Headers si existen
+            if (Object.keys(headers).length > 0) {
+                hlsConfig.xhrSetup = function(xhr, url) {
+                    for (const key in headers) {
+                        try {
+                            xhr.setRequestHeader(key, headers[key]);
+                        } catch (e) {
+                            console.warn(`[Player] No se pudo inyectar el header ${key}:`, e);
+                        }
+                    }
+                };
+            }
+
+            this.hls = new Hls(hlsConfig);
 
             this.hls.loadSource(url);
             this.hls.attachMedia(this.video);
