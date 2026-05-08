@@ -44,7 +44,9 @@ const Player = {
         let url = channel.url.trim();
         let headers = {};
 
-        // Extraer encabezados estilo IPTV (ej. url|User-Agent=...&Referer=...)
+        let isIframe = false;
+
+        // Extraer encabezados estilo IPTV (ej. url|User-Agent=...&Referer=... o url|iframe=true)
         if (url.includes('|')) {
             const parts = url.split('|');
             url = parts[0];
@@ -52,6 +54,11 @@ const Player = {
             
             // Parseamos los headers como query params (Header1=Value1&Header2=Value2)
             const params = new URLSearchParams(headerString);
+            
+            if (params.has('iframe') || headerString.includes('iframe')) {
+                isIframe = true;
+            }
+
             for (const [key, value] of params.entries()) {
                 // Mapear nombres comunes de IPTV al header HTTP real
                 let headerName = key;
@@ -63,7 +70,9 @@ const Player = {
         }
 
         // Determine stream type
-        if (this._isHLS(url)) {
+        if (isIframe) {
+            this._playIframe(url);
+        } else if (this._isHLS(url)) {
             this._playHLS(url, headers);
         } else {
             this._playDirect(url);
@@ -76,6 +85,8 @@ const Player = {
 
     /* ─── Play HLS Stream ─── */
     _playHLS(url, headers = {}) {
+        this._prepareVideoElement();
+
         if (Hls.isSupported()) {
             const hlsConfig = {
                 maxBufferLength: this._getBufferSize(),
@@ -135,32 +146,59 @@ const Player = {
         }
     },
 
-    /* ─── Play Direct URL ─── */
+    /* ─── Play Direct (MP4, Native HLS) ─── */
     _playDirect(url) {
+        this._prepareVideoElement();
         this.video.src = url;
-        this.video.load();
-        this.video.play().catch(() => {});
+        this.video.play().catch(e => {
+            console.error('[Player] Direct play failed', e);
+            this._showError('No se pudo reproducir este formato directamente.');
+        });
     },
 
-    /* ─── Stop ─── */
+    /* ─── Play Iframe (Web embeds) ─── */
+    _playIframe(url) {
+        this._cleanup();
+        this.video.classList.add('hidden');
+        this.iframe.classList.remove('hidden');
+        
+        this.iframe.src = url;
+        this.isPlaying = true;
+        this._showLoading(false);
+        this._updatePlayPauseIcon();
+    },
+
+    /* ─── Helper to prepare video element ─── */
+    _prepareVideoElement() {
+        this.iframe.classList.add('hidden');
+        this.iframe.src = '';
+        this.video.classList.remove('hidden');
+    },
+
+    /* ─── Stop Playback ─── */
     stop() {
         clearTimeout(this.retryTimer);
-
-        if (this.hls) {
-            this.hls.destroy();
-            this.hls = null;
-        }
-
-        if (this.video) {
-            this.video.pause();
-            this.video.removeAttribute('src');
-            this.video.load();
-        }
+        this._cleanup();
 
         this.isPlaying = false;
         this._showLoading(false);
         this._showError(null);
         this._fireState('stopped');
+    },
+
+    _cleanup() {
+        if (this.hls) {
+            this.hls.destroy();
+            this.hls = null;
+        }
+        if (this.video) {
+            this.video.pause();
+            this.video.removeAttribute('src');
+            this.video.load();
+        }
+        if (this.iframe) {
+            this.iframe.src = '';
+        }
     },
 
     /* ─── Pause / Resume ─── */

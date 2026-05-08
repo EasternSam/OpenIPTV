@@ -1,10 +1,10 @@
 #EXTM3U
 
 #EXTINF:-1 tvg-id="Telemicro.do" tvg-name="Telemicro 5" tvg-logo="https://telemicro.com.do/wp-content/uploads/2021/07/icon.png" group-title="República Dominicana", Telemicro Canal 5
-https://live4.telemicro.com.do/live/55/playlist.m3u8|User-Agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36&Referer=https://telemicro.com.do/
+https://telemicro.com.do/players/5bot/|iframe=true
 
 #EXTINF:-1 tvg-id="Telecentro.do" tvg-name="Telecentro 13" tvg-logo="https://telemicro.com.do/wp-content/uploads/2021/07/icon.png" group-title="República Dominicana", Telecentro 13
-https://live4.telemicro.com.do/live/13/playlist.m3u8|User-Agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36&Referer=https://telemicro.com.do/
+https://telemicro.com.do/players/13tv/|iframe=true
 
 #EXTINF:-1 tvg-id="Digital15.do" tvg-name="Digital 15" tvg-logo="https://telemicro.com.do/wp-content/uploads/2021/07/icon.png" group-title="República Dominicana", Digital 15
-https://live4.telemicro.com.do/live/15/playlist.m3u8|User-Agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36&Referer=https://telemicro.com.do/
+https://telemicro.com.do/players/15tv/|iframe=true
