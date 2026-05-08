@@ -395,17 +395,25 @@ const server = http.createServer(async (req, res) => {
     serveStatic(req, res);
 });
 
-server.listen(PORT, HOST, () => {
-    const ip = getLocalIP();
-    console.log('');
-    console.log('  ╔══════════════════════════════════════════════╗');
-    console.log('  ║          OpenIPTV Server Running             ║');
-    console.log('  ╠══════════════════════════════════════════════╣');
-    console.log(`  ║  📺 TV:     http://${ip}:${PORT}          ║`);
-    console.log(`  ║  📱 Remote: http://${ip}:${PORT}/remote    ║`);
-    console.log('  ╚══════════════════════════════════════════════╝');
-    console.log('');
-});
+// ─── Passenger (cPanel) vs standalone ───
+if (typeof(PhusionPassenger) !== 'undefined') {
+    PhusionPassenger.configure({ autoInstall: false });
+    server.listen('passenger', () => {
+        console.log('OpenIPTV running via Passenger');
+    });
+} else {
+    server.listen(PORT, HOST, () => {
+        const ip = getLocalIP();
+        console.log('');
+        console.log('  ╔══════════════════════════════════════════════╗');
+        console.log('  ║          OpenIPTV Server Running             ║');
+        console.log('  ╠══════════════════════════════════════════════╣');
+        console.log(`  ║  📺 TV:     http://${ip}:${PORT}          ║`);
+        console.log(`  ║  📱 Remote: http://${ip}:${PORT}/remote    ║`);
+        console.log('  ╚══════════════════════════════════════════════╝');
+        console.log('');
+    });
+}
 
 function getLocalIP() {
     const interfaces = os.networkInterfaces();
