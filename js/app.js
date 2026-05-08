@@ -352,7 +352,7 @@ const App = {
         this._renderChannels();
         this._updateChannelCount();
         this._updatePlaylistFilterUI();
-        document.getElementById('empty-state')?.classList.add('hidden');
+        this._updateEmptyStateText();
     },
 
     /* ─── Remove a playlist and re-merge ─── */
@@ -741,7 +741,7 @@ const App = {
         const select = document.getElementById('playlist-filter');
         if (!container || !select) return;
 
-        if (this.loadedPlaylists.size > 1) {
+        if (this.loadedPlaylists.size > 0) {
             container.style.display = 'block';
             select.innerHTML = '<option value="all">Todas las listas</option>';
             for (const [url, pl] of this.loadedPlaylists) {
@@ -758,6 +758,22 @@ const App = {
         } else {
             container.style.display = 'none';
             this.currentPlaylist = 'all';
+        }
+    },
+
+    _updateEmptyStateText() {
+        const emptyState = document.getElementById('empty-state');
+        if (!emptyState) return;
+        const h2 = emptyState.querySelector('h2');
+        const p = emptyState.querySelector('p');
+        if (h2 && p) {
+            if (this.channels.length > 0) {
+                h2.textContent = 'Selecciona un canal';
+                p.textContent = 'Elige un canal de la barra lateral para empezar a ver, o añade más listas';
+            } else {
+                h2.textContent = 'Bienvenido a OpenIPTV';
+                p.textContent = 'Carga una playlist M3U para comenzar a ver canales';
+            }
         }
     },
 
