@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const PORT = 8080;
+const PORT = process.env.PORT || 8080;
 const HOST = '0.0.0.0';
 const DATA_FILE = path.join(__dirname, 'data', 'playlists.json');
 const STATIC_DIR = __dirname;
