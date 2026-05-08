@@ -392,6 +392,66 @@ const server = http.createServer(async (req, res) => {
         return;
     }
 
+    // ═══════════════════════════════════════
+    // IPTV CORS PROXY (CLOUDFLARE BYPASS)
+    // ═══════════════════════════════════════
+    if (url === '/api/proxy' && method === 'GET') {
+        const targetUrl = query.get('url');
+        if (!targetUrl) {
+            res.writeHead(400); res.end('Missing url param'); return;
+        }
+
+        try {
+            const parsedUrl = new URL(targetUrl);
+            const client = parsedUrl.protocol === 'https:' ? require('https') : http;
+            
+            const reqHeaders = {
+                'User-Agent': query.get('User-Agent') || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+                'Referer': query.get('Referer') || parsedUrl.origin + '/',
+                'Accept': '*/*'
+            };
+
+            const proxyReq = client.get(targetUrl, { headers: reqHeaders }, (proxyRes) => {
+                const isM3U8 = targetUrl.includes('.m3u8') || (proxyRes.headers['content-type'] && proxyRes.headers['content-type'].includes('mpegurl'));
+                
+                res.writeHead(proxyRes.statusCode, {
+                    'Access-Control-Allow-Origin': '*',
+                    'Content-Type': proxyRes.headers['content-type'] || 'application/vnd.apple.mpegurl',
+                    'Cache-Control': 'no-cache'
+                });
+
+                if (isM3U8) {
+                    let body = '';
+                    proxyRes.on('data', chunk => body += chunk.toString());
+                    proxyRes.on('end', () => {
+                        const baseUrl = targetUrl.substring(0, targetUrl.lastIndexOf('/') + 1);
+                        // Rewrite relative TS/M3U8 chunks to route through proxy
+                        const rewritten = body.split('\n').map(line => {
+                            line = line.trim();
+                            if (line && !line.startsWith('#')) {
+                                const absoluteUrl = line.startsWith('http') ? line : new URL(line, baseUrl).href;
+                                return `/api/proxy?url=${encodeURIComponent(absoluteUrl)}&User-Agent=${encodeURIComponent(reqHeaders['User-Agent'])}&Referer=${encodeURIComponent(reqHeaders['Referer'])}`;
+                            }
+                            return line;
+                        }).join('\n');
+                        res.end(rewritten);
+                    });
+                } else {
+                    proxyRes.pipe(res);
+                }
+            });
+
+            proxyReq.on('error', (err) => {
+                if (!res.headersSent) {
+                    res.writeHead(500); res.end('Proxy error: ' + err.message);
+                }
+            });
+        } catch (err) {
+            res.writeHead(400); res.end('Invalid URL');
+        }
+        return;
+    }
+
     // ─── Static Files ───
     serveStatic(req, res);
 });

@@ -47,24 +47,16 @@ const Player = {
         // Extraer encabezados estilo IPTV (ej. url|User-Agent=...&Referer=...)
         if (url.includes('|')) {
             const parts = url.split('|');
-            url = parts[0];
+            const targetUrl = parts[0];
             const headerString = parts[1];
             
-            // Parseamos los headers como query params (Header1=Value1&Header2=Value2)
-            const params = new URLSearchParams(headerString);
-            for (const [key, value] of params.entries()) {
-                // Mapear nombres comunes de IPTV al header HTTP real
-                let headerName = key;
-                if (key.toLowerCase() === 'user-agent') headerName = 'User-Agent';
-                if (key.toLowerCase() === 'referer') headerName = 'Referer';
-                
-                headers[headerName] = value;
-            }
+            // Construir la URL del proxy
+            url = `/api/proxy?url=${encodeURIComponent(targetUrl)}&${headerString}`;
         }
 
         // Determine stream type
         if (this._isHLS(url)) {
-            this._playHLS(url, headers);
+            this._playHLS(url);
         } else {
             this._playDirect(url);
         }
@@ -75,7 +67,7 @@ const Player = {
     },
 
     /* ─── Play HLS Stream ─── */
-    _playHLS(url, headers = {}) {
+    _playHLS(url) {
         if (Hls.isSupported()) {
             const hlsConfig = {
                 maxBufferLength: this._getBufferSize(),
@@ -96,19 +88,6 @@ const Player = {
                 abrBandWidthUpFactor: 0.7,
                 abrBandWidthFactor: 0.95,
             };
-
-            // Inject Custom HTTP Headers si existen
-            if (Object.keys(headers).length > 0) {
-                hlsConfig.xhrSetup = function(xhr, url) {
-                    for (const key in headers) {
-                        try {
-                            xhr.setRequestHeader(key, headers[key]);
-                        } catch (e) {
-                            console.warn(`[Player] No se pudo inyectar el header ${key}:`, e);
-                        }
-                    }
-                };
-            }
 
             this.hls = new Hls(hlsConfig);
 
