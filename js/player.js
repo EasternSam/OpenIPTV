@@ -23,6 +23,7 @@ const Player = {
     /* ─── Initialize ─── */
     init() {
         this.video = document.getElementById('video-player');
+        this.iframe = document.getElementById('iframe-player');
         this._bindVideoEvents();
 
         // Restore volume
