@@ -167,6 +167,11 @@ const Player = {
         this.isPlaying = true;
         this._showLoading(false);
         this._updatePlayPauseIcon();
+        
+        // Enfocar el iframe para que reciba los eventos del control remoto en la TV (necesario para dar Play)
+        setTimeout(() => {
+            if (this.iframe) this.iframe.focus();
+        }, 500);
     },
 
     /* ─── Helper to prepare video element ─── */

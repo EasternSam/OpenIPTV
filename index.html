@@ -17,9 +17,9 @@
     <!-- HLS.js for stream playback -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js"></script>
     
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="css/player.css">
-    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/styles.css?v=3">
+    <link rel="stylesheet" href="css/player.css?v=3">
+    <link rel="stylesheet" href="css/animations.css?v=3">
 </head>
 <body>
     <!-- ══════════════════════════════════════════════════ -->
@@ -183,7 +183,7 @@
                            crossorigin="anonymous">
                     </video>
                     
-                    <iframe id="iframe-player" class="iframe-player hidden" allowfullscreen allow="autoplay; fullscreen" frameborder="0"></iframe>
+                    <iframe id="iframe-player" class="iframe-player hidden" tabindex="0" allowfullscreen allow="autoplay; fullscreen" frameborder="0"></iframe>
 
                     <!-- Player Overlay -->
                     <div id="player-overlay" class="player-overlay">
