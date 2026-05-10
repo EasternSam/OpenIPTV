@@ -72,32 +72,77 @@
 
         document.addEventListener('keydown', handleKey);
 
+        var hasCachedData = false;
+        try { hasCachedData = !!localStorage.getItem('wilsontv_cache'); } catch(e) {}
+        var splashDelay = hasCachedData ? 500 : 2200;
+
         setTimeout(function() {
             document.getElementById('splash').style.display = 'none';
             document.getElementById('main').style.display = 'block';
             loadPlaylistsFromServer();
-        }, 2200);
+        }, splashDelay);
     }
 
     // ═══════════════════════════════════════
-    // SERVER
+    // SERVER + CACHE
     // ═══════════════════════════════════════
 
     function loadPlaylistsFromServer() {
-        // Clear any existing retry timer
         if (loadingTimer) { clearInterval(loadingTimer); loadingTimer = null; }
-        showLoading('Conectando...');
 
-        // Try PHP API first, then Node.js API as fallback
+        // Try loading from cache first for instant startup
+        var cached = loadFromCache();
+        if (cached && cached.channels && cached.channels.length > 0 && cached.version === 2) {
+            channels = cached.channels;
+            groups = cached.groups || [];
+            favorites = cached.favorites || [];
+            finishLoading();
+            // Then refresh in background
+            refreshFromServer(true);
+        } else {
+            showLoading('Conectando...');
+            refreshFromServer(false);
+        }
+    }
+
+    function loadFromCache() {
+        try {
+            var raw = localStorage.getItem('wilsontv_cache');
+            if (raw) return JSON.parse(raw);
+        } catch(e) {}
+        return null;
+    }
+
+    function saveToCache() {
+        try {
+            // Strip logos to reduce size (they reload from server anyway)
+            var slim = [];
+            for (var i = 0; i < channels.length; i++) {
+                var c = channels[i];
+                slim.push({ name: c.name, group: c.group, url: c.url, iframe: c.iframe, num: c.num });
+            }
+            var json = JSON.stringify({
+                channels: slim,
+                groups: groups,
+                favorites: favorites,
+                timestamp: Date.now(),
+                version: 2
+            });
+            localStorage.setItem('wilsontv_cache', json);
+        } catch(e) {
+            console.log('Cache save error:', e.message);
+        }
+    }
+
+    function refreshFromServer(isBackground) {
         tryFetch(SERVER + '/api.php?action=data', function(ok, data) {
             if (ok) {
-                handleServerData(data);
+                handleServerData(data, isBackground);
             } else {
-                // Fallback to Node.js API
                 tryFetch(SERVER + '/api/data', function(ok2, data2) {
                     if (ok2) {
-                        handleServerData(data2);
-                    } else {
+                        handleServerData(data2, isBackground);
+                    } else if (!isBackground) {
                         showLoading('Sin conexión al servidor.\nAgrega playlists desde:\n' + SERVER + '/panel');
                         loadingTimer = setInterval(function() { loadPlaylistsFromServer(); }, 15000);
                     }
@@ -112,9 +157,8 @@
         xhr.timeout = 8000;
         xhr.onload = function() {
             if (xhr.status === 200) {
-                try {
-                    callback(true, JSON.parse(xhr.responseText));
-                } catch(e) { callback(false, null); }
+                try { callback(true, JSON.parse(xhr.responseText)); }
+                catch(e) { callback(false, null); }
             } else { callback(false, null); }
         };
         xhr.onerror = function() { callback(false, null); };
@@ -122,36 +166,85 @@
         xhr.send();
     }
 
-    function handleServerData(data) {
+    function handleServerData(data, isBackground) {
         favorites = data.favorites || [];
         if (data.playlists && data.playlists.length > 0) {
-            showLoading('Cargando ' + data.playlists.length + ' lista(s)...');
-            loadAllPlaylists(data.playlists);
-        } else {
+            if (!isBackground) showLoading('Cargando ' + data.playlists.length + ' lista(s)...');
+            loadAllPlaylists(data.playlists, isBackground);
+        } else if (!isBackground) {
             showLoading('Sin playlists.\nAgrega desde: ' + SERVER + '/panel');
             loadingTimer = setInterval(function() { loadPlaylistsFromServer(); }, 10000);
         }
     }
 
-    function loadAllPlaylists(playlists) {
+    function loadAllPlaylists(playlists, isBackground) {
+        var newChannels = [];
+        var newGroups = [];
         var loaded = 0;
         var total = playlists.length;
+
         for (var i = 0; i < playlists.length; i++) {
             (function(pl, idx) {
-                showLoading('Descargando ' + (idx + 1) + '/' + total + '...');
+                if (!isBackground) showLoading('Descargando ' + (idx + 1) + '/' + total + '...');
                 var xhr2 = new XMLHttpRequest();
                 xhr2.open('GET', pl.url, true);
                 xhr2.timeout = 20000;
                 xhr2.onload = function() {
-                    if (xhr2.status === 200) parseM3U(xhr2.responseText, pl.name || ('Lista ' + (idx + 1)));
+                    if (xhr2.status === 200) {
+                        parseTempM3U(xhr2.responseText, pl.name || ('Lista ' + (idx + 1)), newChannels, newGroups);
+                    }
                     loaded++;
-                    if (loaded >= total) finishLoading();
+                    if (loaded >= total) finishRefresh(newChannels, newGroups, isBackground);
                 };
-                xhr2.onerror = function() { loaded++; if (loaded >= total) finishLoading(); };
-                xhr2.ontimeout = function() { loaded++; if (loaded >= total) finishLoading(); };
+                xhr2.onerror = function() { loaded++; if (loaded >= total) finishRefresh(newChannels, newGroups, isBackground); };
+                xhr2.ontimeout = function() { loaded++; if (loaded >= total) finishRefresh(newChannels, newGroups, isBackground); };
                 xhr2.send();
             })(playlists[i], i);
         }
+    }
+
+    function parseTempM3U(text, playlistName, chArr, grpArr) {
+        var lines = text.split('\n');
+        var name = '', group = '', logo = '', url = '';
+        var urlSet = {};
+        for (var e = 0; e < chArr.length; e++) urlSet[chArr[e].url] = true;
+
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i].trim();
+            if (line.indexOf('#EXTINF') === 0) {
+                var commaIdx = line.lastIndexOf(',');
+                name = commaIdx > -1 ? line.substring(commaIdx + 1).trim() : 'Canal';
+                var gm = line.match(/group-title="([^"]*)"/);
+                group = gm ? gm[1] : '';
+                var lm = line.match(/tvg-logo="([^"]*)"/);
+                logo = lm ? lm[1] : '';
+                if (name.indexOf('|iframe') > -1) name = name.replace('|iframe', '').trim();
+            } else if (line && line.charAt(0) !== '#') {
+                url = line;
+                if (name && url && !urlSet[url]) {
+                    var isIframe = (name.indexOf('|iframe') > -1) || (url.indexOf('youtube.com') > -1) || (url.indexOf('dailymotion.com') > -1) || (url.indexOf('twitch.tv') > -1) || (url.indexOf('embed') > -1) || (url.indexOf('player') > -1 && url.indexOf('.m3u8') === -1);
+                    var grp = group || playlistName;
+                    chArr.push({ name: name, group: grp, logo: logo, url: url, iframe: isIframe && (url.indexOf('http') === 0), num: chArr.length + 1 });
+                    urlSet[url] = true;
+                    if (grp && grpArr.indexOf(grp) === -1) grpArr.push(grp);
+                }
+                name = ''; group = ''; logo = ''; url = '';
+            }
+        }
+        grpArr.sort();
+    }
+
+    function finishRefresh(newChannels, newGroups, isBackground) {
+        if (newChannels.length > 0) {
+            channels = newChannels;
+            groups = newGroups;
+            saveToCache();
+            if (isBackground) {
+                // Silently update — don't interrupt user
+                return;
+            }
+        }
+        finishLoading();
     }
 
     function finishLoading() {
@@ -162,7 +255,6 @@
         }
         loadingMsg.style.display = 'none';
 
-        // Start with favorites if any exist
         if (getFavoriteChannels().length > 0) {
             selectGroup('⭐ Favoritos');
         } else {
@@ -386,12 +478,13 @@
     // ═══════════════════════════════════════
 
     function startPlayback(ch) {
-        // Clean up previous iframe overlay
+        // Clean up previous
         var oldOverlay = document.getElementById('iframe-overlay');
         if (oldOverlay && oldOverlay.parentNode) oldOverlay.parentNode.removeChild(oldOverlay);
+        clearTimeout(playbackErrorTimer);
 
         if (ch.iframe) {
-            // IFRAME PLAYBACK
+            // IFRAME PLAYBACK — never focus the iframe, keep control on document
             video.style.display = 'none';
             video.src = '';
             if (hls) { hls.destroy(); hls = null; }
@@ -406,11 +499,7 @@
 
             iframe.src = finalUrl;
             iframe.style.display = 'block';
-
-            // Auto-focus iframe after 2.5s (no event listener stacking)
-            setTimeout(function() {
-                iframe.focus();
-            }, 2500);
+            // Do NOT focus iframe — keeps D-pad control on the app
 
         } else {
             // VIDEO PLAYBACK
@@ -419,17 +508,62 @@
             video.style.display = 'block';
             if (hls) { hls.destroy(); hls = null; }
 
-            if (ch.url.indexOf('.m3u8') > -1 && typeof Hls !== 'undefined' && Hls.isSupported()) {
-                hls = new Hls({ enableWorker: false });
-                hls.loadSource(ch.url);
+            var playUrl = ch.url;
+            var useHls = typeof Hls !== 'undefined' && Hls.isSupported();
+
+            if (useHls) {
+                // Try HLS.js for all URLs (works for .m3u8 and Xtream Codes streams)
+                hls = new Hls({ enableWorker: false, xhrSetup: function(xhr) { xhr.timeout = 10000; } });
+                var hlsFailed = false;
+                hls.loadSource(playUrl);
                 hls.attachMedia(video);
                 hls.on(Hls.Events.MANIFEST_PARSED, function() { video.play().catch(function(){}); });
-                hls.on(Hls.Events.ERROR, function(ev, data) { if (data.fatal) console.log('HLS:', data.type); });
+                hls.on(Hls.Events.ERROR, function(ev, data) {
+                    if (data.fatal && !hlsFailed) {
+                        hlsFailed = true;
+                        hls.destroy(); hls = null;
+                        // Fallback: try native video
+                        video.src = playUrl;
+                        video.play().catch(function() {
+                            showPlaybackError(ch.name);
+                        });
+                    }
+                });
             } else {
-                video.src = ch.url;
-                video.play().catch(function(){});
+                // No HLS.js — native only
+                video.src = playUrl;
+                video.play().catch(function() {
+                    showPlaybackError(ch.name);
+                });
             }
+
+            // Catch video element errors
+            video.onerror = function() {
+                showPlaybackError(ch.name);
+            };
         }
+    }
+
+    var playbackErrorTimer = null;
+
+    function showPlaybackError(chName) {
+        var existing = document.getElementById('playback-error');
+        if (existing) existing.parentNode.removeChild(existing);
+        var el = document.createElement('div');
+        el.id = 'playback-error';
+        el.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:999;' +
+            'background:rgba(12,12,40,0.95);border:1px solid rgba(255,80,80,0.4);' +
+            'border-radius:18px;padding:32px 48px;text-align:center;color:#f0f0ff;' +
+            'backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);animation:fadeIn 0.25s ease;max-width:600px;';
+        el.innerHTML = '<div style="font-size:48px;margin-bottom:12px">⚠️</div>' +
+            '<div style="font-size:22px;font-weight:600;margin-bottom:8px">' + escapeHtml(chName) + '</div>' +
+            '<div style="font-size:16px;color:rgba(255,255,255,0.5)">No se pudo reproducir este canal</div>' +
+            '<div style="font-size:14px;color:rgba(255,255,255,0.3);margin-top:12px">Presiona ◄ o OK para volver</div>';
+        document.getElementById('main').appendChild(el);
+        // Auto-remove after 5s
+        playbackErrorTimer = setTimeout(function() {
+            if (el.parentNode) el.parentNode.removeChild(el);
+        }, 5000);
     }
 
     function playChannel(filteredIdx) {
@@ -488,6 +622,9 @@
     // ═══════════════════════════════════════
 
     function showSidebar() {
+        // Clear any error overlay
+        var errEl = document.getElementById('playback-error');
+        if (errEl && errEl.parentNode) errEl.parentNode.removeChild(errEl);
         renderGroups();
         if (currentGroup) {
             renderChannels();
