@@ -49,20 +49,20 @@ var Navigation = {
 
     /* ─── Initialize ─── */
     init() {
-        document.addEventListener('keydown', function(e) this._handleKeyDown(e));
+        document.addEventListener('keydown', (e) => this._handleKeyDown(e));
         
         // Mouse movement detection (hide cursor on TV, show on PC)
         var mouseTimer;
-        document.addEventListener('mousemove', function() {
+        document.addEventListener('mousemove', () => {
             document.body.classList.add('has-mouse');
             clearTimeout(mouseTimer);
-            mouseTimer = setTimeout(function() {
+            mouseTimer = setTimeout(() => {
                 document.body.classList.remove('has-mouse');
             }, 3000);
         });
 
         // Click on focusable items
-        document.addEventListener('click', function(e) {
+        document.addEventListener('click', (e) => {
             var focusable = e.target.closest('.focusable');
             if (focusable) {
                 this._setFocusTo(focusable);
@@ -70,7 +70,7 @@ var Navigation = {
         });
 
         // Touch support
-        document.addEventListener('touchstart', function() {
+        document.addEventListener('touchstart', () => {
             document.body.classList.add('has-mouse');
         });
 
@@ -382,7 +382,7 @@ var Navigation = {
 
         // Reset timer
         clearTimeout(this.numberTimer);
-        this.numberTimer = setTimeout(function() {
+        this.numberTimer = setTimeout(() => {
             var channelNum = parseInt(this.numberBuffer, 10);
             this.numberBuffer = '';
             
