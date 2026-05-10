@@ -171,6 +171,53 @@ const server = http.createServer(async (req, res) => {
     }
 
     // ═══════════════════════════════════════
+    // IFRAME PROXY — serves external pages as same-origin with autoplay injection
+    // ═══════════════════════════════════════
+
+    if (url === '/api/iframe-proxy' && method === 'GET') {
+        var targetUrl = query.get('url');
+        if (!targetUrl) {
+            res.writeHead(400); res.end('Missing url param'); return;
+        }
+
+        // Serve a wrapper page that loads the target in an iframe and auto-clicks play
+        var wrapperHtml = '<!DOCTYPE html><html><head>' +
+            '<meta charset="UTF-8">' +
+            '<style>*{margin:0;padding:0}html,body{width:100%;height:100%;overflow:hidden;background:#000}' +
+            'iframe{width:100%;height:100%;border:none}</style></head>' +
+            '<body>' +
+            '<iframe id="f" src="' + targetUrl.replace(/"/g, '&quot;') + '" ' +
+            'allow="autoplay;fullscreen" allowfullscreen sandbox="allow-scripts allow-same-origin allow-presentation allow-popups allow-forms"></iframe>' +
+            '<script>' +
+            'var f=document.getElementById("f");' +
+            'f.onload=function(){' +
+            '  var times=[500,1500,3000,5000,8000];' +
+            '  for(var i=0;i<times.length;i++){' +
+            '    (function(t){setTimeout(function(){try{' +
+            '      var d=f.contentDocument||f.contentWindow.document;' +
+            '      if(!d)return;' +
+            '      var v=d.querySelector("video");' +
+            '      if(v){v.muted=false;v.play().catch(function(){});}' +
+            '      var btns=d.querySelectorAll("button,div[role=button],[class*=play],[aria-label*=play],[aria-label*=Play],.vjs-big-play-button,.jw-icon-playback,.plyr__control--overlaid");' +
+            '      for(var j=0;j<btns.length;j++){' +
+            '        var s=window.getComputedStyle(btns[j]);' +
+            '        if(s.display!=="none"&&s.visibility!=="hidden"){btns[j].click();break;}' +
+            '      }' +
+            '    }catch(e){}},t);})(times[i]);' +
+            '  }' +
+            '};' +
+            '</script></body></html>';
+
+        res.writeHead(200, {
+            'Content-Type': 'text/html; charset=utf-8',
+            'Cache-Control': 'no-store',
+            'Access-Control-Allow-Origin': '*',
+        });
+        res.end(wrapperHtml);
+        return;
+    }
+
+    // ═══════════════════════════════════════
     // REMOTE CONTROL API
     // ═══════════════════════════════════════
 
