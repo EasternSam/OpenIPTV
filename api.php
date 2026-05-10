@@ -134,5 +134,54 @@ if ($action === 'favorites' && $method === 'DELETE') {
     exit;
 }
 
+// POST /api.php?action=upload → upload M3U file
+if ($action === 'upload' && $method === 'POST') {
+    $uploadDir = __DIR__ . '/uploads';
+    if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+
+    if (empty($_FILES['m3u']) || $_FILES['m3u']['error'] !== UPLOAD_ERR_OK) {
+        http_response_code(400);
+        echo json_encode(['error' => 'No file uploaded']);
+        exit;
+    }
+
+    $file = $_FILES['m3u'];
+    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    if (!in_array($ext, ['m3u', 'm3u8', 'txt'])) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Only .m3u / .m3u8 / .txt files']);
+        exit;
+    }
+
+    // Sanitize filename
+    $safeName = preg_replace('/[^a-zA-Z0-9_\-]/', '_', pathinfo($file['name'], PATHINFO_FILENAME));
+    $safeName = substr($safeName, 0, 50) . '_' . time() . '.' . $ext;
+    $dest = $uploadDir . '/' . $safeName;
+
+    if (move_uploaded_file($file['tmp_name'], $dest)) {
+        // Build public URL
+        $proto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'];
+        $url = $proto . '://' . $host . '/uploads/' . $safeName;
+
+        // Auto-add as playlist
+        $name = isset($_POST['name']) && $_POST['name'] ? $_POST['name'] : pathinfo($file['name'], PATHINFO_FILENAME);
+        $data = readData();
+        array_unshift($data['playlists'], [
+            'url' => $url,
+            'name' => $name,
+            'addedAt' => time() * 1000
+        ]);
+        $data['lastPlaylist'] = $url;
+        writeData($data);
+
+        echo json_encode(['success' => true, 'url' => $url, 'name' => $name]);
+    } else {
+        http_response_code(500);
+        echo json_encode(['error' => 'Upload failed']);
+    }
+    exit;
+}
+
 http_response_code(404);
 echo json_encode(['error' => 'Unknown action']);

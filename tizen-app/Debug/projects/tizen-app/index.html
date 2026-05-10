@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=1920, initial-scale=1.0">
-    <title>OpenIPTV</title>
+    <title>WilsonTV</title>
     <link rel="stylesheet" href="css/app.css">
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js"></script>
 </head>
@@ -12,7 +12,7 @@
     <div id="splash" class="splash">
         <div class="splash-inner">
             <div class="splash-icon">▶</div>
-            <div class="splash-title">Open<span>IPTV</span></div>
+            <div class="splash-title">Wilson<span>TV</span></div>
             <div class="splash-bar"><div class="splash-progress"></div></div>
         </div>
     </div>
@@ -41,13 +41,26 @@
         <!-- Channel List Sidebar -->
         <div id="sidebar" class="sidebar" style="display:none">
             <div class="sidebar-header">
-                <h2>📺 Canales</h2>
+                <h2>📺 WilsonTV</h2>
                 <span id="ch-count" class="ch-count"></span>
             </div>
             <div class="sidebar-groups" id="groups"></div>
             <div class="sidebar-list" id="channel-list"></div>
             <div class="sidebar-footer">
-                OK = Seleccionar &nbsp;│&nbsp; ◄ Back = Cerrar &nbsp;│&nbsp; ▲▼ = Navegar
+                OK = Seleccionar &nbsp;│&nbsp; 🟡 = Favorito &nbsp;│&nbsp; ▲▼ Navegar
+            </div>
+        </div>
+
+        <!-- Channel Grid Browser (fullscreen) -->
+        <div id="grid-browser" class="grid-browser" style="display:none">
+            <div class="grid-topbar">
+                <div class="grid-title">📺 WilsonTV</div>
+                <div class="grid-info" id="grid-info">0 canales</div>
+            </div>
+            <div class="grid-groups" id="grid-groups"></div>
+            <div class="grid-container" id="grid-container"></div>
+            <div class="grid-footer">
+                OK = Ver canal &nbsp;│&nbsp; 🟡 = Favorito &nbsp;│&nbsp; ◄►▲▼ = Navegar &nbsp;│&nbsp; Back = Cerrar
             </div>
         </div>
 

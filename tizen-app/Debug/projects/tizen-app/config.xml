@@ -4,8 +4,8 @@
         version="1.0.0"
         viewmodes="maximized">
 
-    <name>OpenIPTV</name>
-    <description>IPTV Player for Samsung Smart TV</description>
+    <name>WilsonTV</name>
+    <description>WilsonTV - IPTV Player for Samsung Smart TV</description>
     <author href="https://github.com/EasternSam">EasternSam</author>
     <icon src="icon.png"/>
     <content src="index.html"/>
