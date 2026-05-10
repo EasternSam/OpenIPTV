@@ -181,6 +181,51 @@ const RemoteReceiver = {
                 }
                 break;
 
+            // ── Mobile Control Center commands ──
+            case 'load-playlist-url':
+                if (typeof App !== 'undefined' && data.url) {
+                    App.loadPlaylistFromUrl(data.url);
+                }
+                break;
+            case 'remove-playlist':
+                if (typeof App !== 'undefined' && data.url) {
+                    App._removeLoadedPlaylist(data.url);
+                }
+                break;
+            case 'set-volume':
+                if (typeof Player !== 'undefined' && data.volume != null) {
+                    Player.setVolume(data.volume);
+                }
+                break;
+            case 'update-settings':
+                if (typeof Storage !== 'undefined' && data) {
+                    Storage.updateSettings(data);
+                    if (typeof App !== 'undefined') App._toast('⚙️ Configuración actualizada desde el móvil');
+                }
+                break;
+            case 'clear-favorites':
+                if (typeof Storage !== 'undefined') {
+                    Storage.clearFavorites();
+                    if (typeof App !== 'undefined') { App._renderChannels(); App._toast('Favoritos borrados'); }
+                }
+                break;
+            case 'clear-recents':
+                if (typeof Storage !== 'undefined') {
+                    Storage.clearRecents();
+                    if (typeof App !== 'undefined') { App._renderChannels(); App._toast('Recientes borrados'); }
+                }
+                break;
+            case 'clear-all':
+                if (typeof Storage !== 'undefined') {
+                    Storage.clearAll();
+                    if (typeof App !== 'undefined') {
+                        App.channels = []; App.filteredChannels = []; App.groups = [];
+                        App._renderChannels(); App._renderGroups(); App._updateChannelCount();
+                        App._toast('Todos los datos borrados');
+                    }
+                }
+                break;
+
             // Keyboard commands
             case 'type-text':
                 this._handleTypeText(data);
@@ -309,17 +354,46 @@ const RemoteReceiver = {
                 name: c.name,
                 group: c.group || '',
                 url: c.url,
+                logo: c.logo || '',
             }));
         }
 
+        // Build playlists info
+        let playlistsInfo = [];
+        if (typeof App !== 'undefined' && App.loadedPlaylists) {
+            const saved = (typeof Storage !== 'undefined') ? Storage.getSavedPlaylists() : [];
+            for (const pl of saved) {
+                playlistsInfo.push({
+                    url: pl.url,
+                    name: pl.name || 'Playlist',
+                    loaded: App.loadedPlaylists.has(pl.url),
+                });
+            }
+        }
+
+        // Favorites & Recents
+        let favorites = [];
+        let recents = [];
+        if (typeof Storage !== 'undefined') {
+            favorites = Storage.getFavorites() || [];
+            recents = Storage.getRecents() || [];
+        }
+
+        const currentCh = (typeof Player !== 'undefined') ? Player.currentChannel : null;
+
         const state = {
-            channelName: (typeof Player !== 'undefined' && Player.currentChannel) ? Player.currentChannel.name : null,
-            channelNumber: (typeof Player !== 'undefined' && Player.currentChannel) ? Player.currentChannel.number : null,
+            channelName: currentCh ? currentCh.name : null,
+            channelNumber: currentCh ? currentCh.number : null,
+            channelGroup: currentCh ? (currentCh.group || '') : '',
+            channelUrl: currentCh ? currentCh.url : null,
             playing: (typeof Player !== 'undefined') ? Player.isPlaying : false,
             muted: (typeof Player !== 'undefined') ? !!Player.isMuted : false,
             volume: (typeof Player !== 'undefined') ? Player.getVolume() : 0,
             needsKeyboard,
             channels: channelList,
+            playlists: playlistsInfo,
+            favorites,
+            recents,
         };
 
         try {
