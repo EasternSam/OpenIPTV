@@ -166,9 +166,9 @@ const Player = {
         this.iframe.classList.remove('hidden');
         
         // Append autoplay params if not already present
-        let autoUrl = url;
+        var autoUrl = url;
         try {
-            const u = new URL(url);
+            var u = new URL(url);
             if (!u.searchParams.has('autoplay')) u.searchParams.set('autoplay', '1');
             if (!u.searchParams.has('muted')) u.searchParams.set('muted', '0');
             if (!u.searchParams.has('auto_play')) u.searchParams.set('auto_play', '1');
@@ -181,56 +181,113 @@ const Player = {
         this._updatePlayPauseIcon();
         if (this.currentChannel) this.channelHealth[this.currentChannel.url] = 'ok';
         
-        // After iframe loads, try to simulate click to trigger play
-        this.iframe.onload = () => {
-            this._tryIframeAutoplay();
-        };
+        // Create click-interceptor overlay for Samsung TV
+        // This captures the first remote OK press and clicks into the iframe
+        this._createIframeOverlay();
 
-        // Focus iframe so keyboard/remote events reach it
-        setTimeout(() => {
-            if (this.iframe) this.iframe.focus();
-        }, 500);
+        // After iframe loads, try same-origin autoplay
+        this.iframe.onload = function() {
+            Player._tryIframeAutoplay();
+        };
     },
 
-    /* ─── Try to autoplay inside iframe ─── */
+    /* ─── Iframe click-interceptor overlay ─── */
+    _createIframeOverlay() {
+        this._removeIframeOverlay();
+        
+        var container = document.getElementById('video-container');
+        if (!container) return;
+
+        var overlay = document.createElement('div');
+        overlay.id = 'iframe-click-overlay';
+        overlay.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:50;cursor:pointer;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);';
+        overlay.innerHTML = '<div style="text-align:center;color:white;font-family:Inter,sans-serif;"><div style="font-size:48px;margin-bottom:12px;">▶</div><div style="font-size:16px;opacity:0.8;">Presiona OK para reproducir</div></div>';
+        container.appendChild(overlay);
+
+        // Handle click/touch on overlay
+        var self = this;
+        var handleActivate = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            self._removeIframeOverlay();
+            // Focus iframe and dispatch a click at its center
+            if (self.iframe) {
+                self.iframe.focus();
+                // Dispatch a click event at center of iframe
+                var rect = self.iframe.getBoundingClientRect();
+                var clickX = rect.left + rect.width / 2;
+                var clickY = rect.top + rect.height / 2;
+                
+                var clickEvent = new MouseEvent('click', {
+                    bubbles: true,
+                    cancelable: true,
+                    clientX: clickX,
+                    clientY: clickY,
+                    view: window
+                });
+                self.iframe.dispatchEvent(clickEvent);
+            }
+        };
+
+        overlay.addEventListener('click', handleActivate);
+        overlay.addEventListener('touchend', handleActivate);
+
+        // Also listen for keyboard Enter/OK (Samsung remote)
+        var keyHandler = function(e) {
+            if (e.keyCode === 13 || e.keyCode === 10009 || e.keyCode === 32) {
+                handleActivate(e);
+                document.removeEventListener('keydown', keyHandler, true);
+            }
+        };
+        document.addEventListener('keydown', keyHandler, true);
+
+        // Auto-remove after 15s if not interacted
+        setTimeout(function() {
+            self._removeIframeOverlay();
+            document.removeEventListener('keydown', keyHandler, true);
+        }, 15000);
+    },
+
+    _removeIframeOverlay() {
+        var overlay = document.getElementById('iframe-click-overlay');
+        if (overlay) overlay.remove();
+    },
+
+    /* ─── Try to autoplay inside iframe (same-origin only) ─── */
     _tryIframeAutoplay() {
-        // Try clicking inside the iframe at multiple intervals
-        // Some players need a moment to initialize before accepting clicks
-        const attempts = [800, 1500, 3000, 5000];
-        attempts.forEach(delay => {
-            setTimeout(() => {
-                try {
-                    // Try to access iframe content (only works same-origin)
-                    const doc = this.iframe.contentDocument || this.iframe.contentWindow?.document;
-                    if (doc) {
-                        // Try to find and click play buttons
-                        const playBtn = doc.querySelector(
-                            'button[class*="play"], .vjs-big-play-button, .play-button, ' +
-                            '[aria-label*="play" i], [aria-label*="Play" i], ' +
-                            '.jw-icon-playback, .plyr__control--overlaid, ' +
-                            'video'
-                        );
-                        if (playBtn) {
-                            playBtn.click();
-                            return;
+        var self = this;
+        var attempts = [500, 1500, 3000];
+        for (var i = 0; i < attempts.length; i++) {
+            (function(delay) {
+                setTimeout(function() {
+                    try {
+                        var doc = self.iframe.contentDocument || (self.iframe.contentWindow ? self.iframe.contentWindow.document : null);
+                        if (doc) {
+                            // Try to find and click play buttons
+                            var playBtn = doc.querySelector(
+                                'button[class*="play"], .vjs-big-play-button, .play-button, ' +
+                                '[aria-label*="play"], [aria-label*="Play"], ' +
+                                '.jw-icon-playback, .plyr__control--overlaid, video'
+                            );
+                            if (playBtn) {
+                                playBtn.click();
+                                self._removeIframeOverlay();
+                                return;
+                            }
+                            // Try to play video directly
+                            var video = doc.querySelector('video');
+                            if (video) {
+                                video.play().then(function() {
+                                    self._removeIframeOverlay();
+                                }).catch(function() {});
+                            }
                         }
-                        // Try to play any video element directly
-                        const video = doc.querySelector('video');
-                        if (video) {
-                            video.muted = false;
-                            video.play().catch(() => {});
-                        }
+                    } catch(e) {
+                        // Cross-origin — rely on overlay click interceptor
                     }
-                } catch(e) {
-                    // Cross-origin: can't access iframe content
-                    // Simulate a mouse click on the iframe element itself
-                    // This triggers the iframe to receive a user gesture
-                    if (this.iframe) {
-                        this.iframe.focus();
-                    }
-                }
-            }, delay);
-        });
+                }, delay);
+            })(attempts[i]);
+        }
     },
 
     /* ─── Helper to prepare video element ─── */
@@ -244,6 +301,7 @@ const Player = {
     stop() {
         clearTimeout(this.retryTimer);
         this._cleanup();
+        this._removeIframeOverlay();
 
         this.isPlaying = false;
         this._showLoading(false);
