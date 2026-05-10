@@ -166,20 +166,23 @@ const Player = {
         this.video.classList.add('hidden');
         this.iframe.classList.remove('hidden');
         
-        // Route through our proxy which injects autoplay script
-        // This makes the wrapper same-origin so it can auto-click play buttons
-        var proxyUrl = '/api/iframe-proxy?url=' + encodeURIComponent(url);
+        // Append autoplay params
+        var autoUrl = url;
+        try {
+            var u = new URL(url);
+            if (!u.searchParams.has('autoplay')) u.searchParams.set('autoplay', '1');
+            if (!u.searchParams.has('auto_play')) u.searchParams.set('auto_play', '1');
+            autoUrl = u.toString();
+        } catch(e) { /* use original */ }
 
-        this.iframe.src = proxyUrl;
+        this.iframe.src = autoUrl;
         this.isPlaying = true;
         this._showLoading(false);
         this._updatePlayPauseIcon();
         if (this.currentChannel) this.channelHealth[this.currentChannel.url] = 'ok';
         
-        // Focus iframe so remote events reach it
-        setTimeout(function() {
-            if (Player.iframe) Player.iframe.focus();
-        }, 1000);
+        // Show click-interceptor overlay — one OK press on Samsung remote starts playback
+        this._createIframeOverlay();
     },
 
     /* ─── Iframe click-interceptor overlay ─── */
