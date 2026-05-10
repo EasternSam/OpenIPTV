@@ -79,30 +79,49 @@
     function loadPlaylistsFromServer() {
         showLoading('Conectando...');
 
+        // Try PHP API first, then Node.js API as fallback
+        tryFetch(SERVER + '/api.php?action=data', function(ok, data) {
+            if (ok) {
+                handleServerData(data);
+            } else {
+                // Fallback to Node.js API
+                tryFetch(SERVER + '/api/data', function(ok2, data2) {
+                    if (ok2) {
+                        handleServerData(data2);
+                    } else {
+                        showLoading('Sin conexión al servidor.\nAgrega playlists desde:\n' + SERVER + '/panel');
+                        loadingTimer = setInterval(function() { loadPlaylistsFromServer(); }, 15000);
+                    }
+                });
+            }
+        });
+    }
+
+    function tryFetch(url, callback) {
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', SERVER + '/api/data', true);
-        xhr.timeout = 10000;
+        xhr.open('GET', url, true);
+        xhr.timeout = 8000;
         xhr.onload = function() {
             if (xhr.status === 200) {
                 try {
-                    var data = JSON.parse(xhr.responseText);
-                    favorites = data.favorites || [];
-                    if (data.playlists && data.playlists.length > 0) {
-                        showLoading('Cargando ' + data.playlists.length + ' lista(s)...');
-                        loadAllPlaylists(data.playlists);
-                    } else {
-                        showLoading('Sin playlists.\nAgrega desde: ' + SERVER + '/panel');
-                        loadingTimer = setInterval(function() { loadPlaylistsFromServer(); }, 10000);
-                    }
-                } catch(e) { showLoading('Error al leer datos'); }
-            } else { showLoading('Error: ' + xhr.status); }
+                    callback(true, JSON.parse(xhr.responseText));
+                } catch(e) { callback(false, null); }
+            } else { callback(false, null); }
         };
-        xhr.onerror = function() { showLoading('Sin conexión'); };
-        xhr.ontimeout = function() {
-            showLoading('Timeout. Reintentando...');
-            setTimeout(loadPlaylistsFromServer, 3000);
-        };
+        xhr.onerror = function() { callback(false, null); };
+        xhr.ontimeout = function() { callback(false, null); };
         xhr.send();
+    }
+
+    function handleServerData(data) {
+        favorites = data.favorites || [];
+        if (data.playlists && data.playlists.length > 0) {
+            showLoading('Cargando ' + data.playlists.length + ' lista(s)...');
+            loadAllPlaylists(data.playlists);
+        } else {
+            showLoading('Sin playlists.\nAgrega desde: ' + SERVER + '/panel');
+            loadingTimer = setInterval(function() { loadPlaylistsFromServer(); }, 10000);
+        }
     }
 
     function loadAllPlaylists(playlists) {

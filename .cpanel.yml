@@ -8,5 +8,6 @@ deployment:
     - /bin/cp index.html $DEPLOYPATH/
     - /bin/cp remote.html $DEPLOYPATH/
     - /bin/cp panel.html $DEPLOYPATH/
+    - /bin/cp api.php $DEPLOYPATH/
     - /bin/cp server.js $DEPLOYPATH/
     - /bin/cp .htaccess $DEPLOYPATH/ 2>/dev/null; true

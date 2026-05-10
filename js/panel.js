@@ -1,6 +1,8 @@
 const Panel = {
-    API_BASE: '/api',
+    // PHP API (always works on cPanel)
+    API: '/api.php',
     data: { playlists: [], lastPlaylist: null, favorites: [] },
+    serverAvailable: false,
 
     async init() {
         this.bindEvents();
@@ -29,40 +31,34 @@ const Panel = {
     async fetchData() {
         this.renderLoading();
 
-        // Try server first, fallback to localStorage
-        let serverOk = false;
+        // Try PHP API first
         try {
-            const res = await fetch(`${this.API_BASE}/data`, { signal: AbortSignal.timeout(3000) });
+            const res = await fetch(`${this.API}?action=data`, { signal: AbortSignal.timeout(5000) });
             if (res.ok) {
-                const data = await res.json();
-                this.data = data;
-                // Sync to localStorage
-                this._setLocal('openiptv_playlists', data.playlists || []);
-                this._setLocal('openiptv_last_playlist', data.lastPlaylist);
-                this._setLocal('openiptv_favorites', data.favorites || []);
-                serverOk = true;
-            }
-        } catch (err) { /* server unavailable */ }
-
-        if (!serverOk) {
-            // Read from localStorage
+                this.data = await res.json();
+                this.serverAvailable = true;
+                // Sync to localStorage for the web player
+                this._setLocal('openiptv_playlists', this.data.playlists || []);
+                this._setLocal('openiptv_last_playlist', this.data.lastPlaylist);
+                this._setLocal('openiptv_favorites', this.data.favorites || []);
+            } else throw new Error('Server error');
+        } catch (err) {
+            // Fallback to localStorage
             this.data = {
                 playlists: this._getLocal('openiptv_playlists', []),
                 lastPlaylist: this._getLocal('openiptv_last_playlist', null),
                 favorites: this._getLocal('openiptv_favorites', []),
             };
+            this.serverAvailable = false;
         }
 
-        this.serverAvailable = serverOk;
         this.updateStats();
         this.renderGrid();
     },
 
     _getLocal(key, fallback) {
-        try {
-            const v = localStorage.getItem(key);
-            return v ? JSON.parse(v) : fallback;
-        } catch (e) { return fallback; }
+        try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+        catch (e) { return fallback; }
     },
 
     _setLocal(key, value) {
@@ -75,14 +71,13 @@ const Panel = {
         let defaultName = 'Ninguna';
         if (this.data.lastPlaylist) {
             const defPl = this.data.playlists.find(p => p.url === this.data.lastPlaylist);
-            defaultName = defPl ? defPl.name : 'URL Desconocida';
+            defaultName = defPl ? defPl.name : 'Desconocida';
         }
         document.getElementById('stat-default').textContent = defaultName;
 
-        // Show server status
         const statusEl = document.getElementById('server-status');
         if (statusEl) {
-            statusEl.textContent = this.serverAvailable ? '🟢 Servidor activo' : '🟡 Modo local (sin servidor)';
+            statusEl.textContent = this.serverAvailable ? '🟢 Servidor OK' : '🟡 Modo local';
             statusEl.style.color = this.serverAvailable ? '#4ade80' : '#fbbf24';
         }
     },
@@ -102,7 +97,6 @@ const Panel = {
 
         this.data.playlists.forEach(pl => {
             const isDefault = this.data.lastPlaylist === pl.url;
-            const isFav = (this.data.favorites || []).includes(pl.url);
             const date = new Date(pl.addedAt || Date.now()).toLocaleDateString();
 
             const card = document.createElement('div');
@@ -131,9 +125,7 @@ const Panel = {
             const btnDelete = card.querySelector('.btn-delete');
             if (btnDelete) {
                 btnDelete.addEventListener('click', () => {
-                    if (confirm('¿Estás seguro de eliminar esta lista?')) {
-                        this.deletePlaylist(pl.url);
-                    }
+                    if (confirm('¿Eliminar esta playlist?')) this.deletePlaylist(pl.url);
                 });
             }
 
@@ -144,39 +136,31 @@ const Panel = {
     async addPlaylist() {
         const url = document.getElementById('input-pl-url').value.trim();
         const name = document.getElementById('input-pl-name').value.trim() || this._extractName(url);
-
-        if (!url) {
-            this.showToast('❌ La URL es obligatoria');
-            return;
-        }
+        if (!url) { this.showToast('❌ La URL es obligatoria'); return; }
 
         const btn = document.getElementById('btn-save');
         btn.textContent = 'Guardando...';
         btn.disabled = true;
 
         try {
-            // Save to localStorage first (always works)
-            const playlists = this._getLocal('openiptv_playlists', []);
-            const filtered = playlists.filter(p => p.url !== url);
-            filtered.unshift({ url, name, addedAt: Date.now() });
-            this._setLocal('openiptv_playlists', filtered);
-            if (!this._getLocal('openiptv_last_playlist', null)) {
-                this._setLocal('openiptv_last_playlist', url);
-            }
+            // Save via PHP API
+            const res = await fetch(`${this.API}?action=playlists`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url, name }),
+            });
 
-            // Try server sync
-            try {
-                await fetch(`${this.API_BASE}/playlists`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url, name }),
-                    signal: AbortSignal.timeout(3000),
-                });
-            } catch (e) { /* server offline, localStorage is enough */ }
+            if (!res.ok) {
+                // Fallback: save to localStorage
+                const playlists = this._getLocal('openiptv_playlists', []);
+                const filtered = playlists.filter(p => p.url !== url);
+                filtered.unshift({ url, name, addedAt: Date.now() });
+                this._setLocal('openiptv_playlists', filtered);
+            }
             
             this.showToast('✅ Playlist añadida');
             document.getElementById('btn-close-modal').click();
-            this.fetchData();
+            await this.fetchData();
         } catch (err) {
             this.showToast('❌ ' + err.message);
         } finally {
@@ -187,44 +171,31 @@ const Panel = {
 
     async deletePlaylist(url) {
         try {
-            // Remove from localStorage
-            const playlists = this._getLocal('openiptv_playlists', []);
-            this._setLocal('openiptv_playlists', playlists.filter(p => p.url !== url));
-
-            // Try server
-            try {
-                await fetch(`${this.API_BASE}/playlists`, {
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url }),
-                    signal: AbortSignal.timeout(3000),
-                });
-            } catch (e) {}
-            
-            this.showToast('🗑️ Playlist eliminada');
-            this.fetchData();
-        } catch (err) {
-            this.showToast('❌ ' + err.message);
+            await fetch(`${this.API}?action=playlists`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url }),
+            });
+        } catch (e) {
+            const pl = this._getLocal('openiptv_playlists', []);
+            this._setLocal('openiptv_playlists', pl.filter(p => p.url !== url));
         }
+        this.showToast('🗑️ Eliminada');
+        this.fetchData();
     },
 
     async setDefault(url) {
         try {
+            await fetch(`${this.API}?action=last-playlist`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url }),
+            });
+        } catch (e) {
             this._setLocal('openiptv_last_playlist', url);
-            try {
-                await fetch(`${this.API_BASE}/last-playlist`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url }),
-                    signal: AbortSignal.timeout(3000),
-                });
-            } catch (e) {}
-            
-            this.showToast('🌟 Lista principal actualizada');
-            this.fetchData();
-        } catch (err) {
-            this.showToast('❌ ' + err.message);
         }
+        this.showToast('🌟 Actualizada');
+        this.fetchData();
     },
 
     _extractName(url) {
@@ -239,7 +210,7 @@ const Panel = {
         document.getElementById('playlist-grid').innerHTML = `
             <div class="loading-state">
                 <div class="spinner"></div>
-                <p>Cargando playlists...</p>
+                <p>Cargando...</p>
             </div>`;
     },
 
@@ -248,7 +219,6 @@ const Panel = {
         toast.textContent = msg;
         toast.classList.remove('hidden');
         toast.classList.add('show');
-        
         clearTimeout(this.toastTimer);
         this.toastTimer = setTimeout(() => {
             toast.classList.remove('show');
@@ -259,11 +229,8 @@ const Panel = {
     escapeHtml(unsafe) {
         if (!unsafe) return '';
         return unsafe.toString()
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
 };
 
