@@ -390,6 +390,7 @@ const RemoteReceiver = {
             muted: (typeof Player !== 'undefined') ? !!Player.isMuted : false,
             volume: (typeof Player !== 'undefined') ? Player.getVolume() : 0,
             signalQuality: (typeof Player !== 'undefined') ? (Player.signalQuality || 'none') : 'none',
+            channelHealth: (typeof Player !== 'undefined') ? (Player.channelHealth || {}) : {},
             needsKeyboard,
             channels: channelList,
             playlists: playlistsInfo,

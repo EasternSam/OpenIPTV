@@ -12,6 +12,7 @@ const Player = {
     isPlaying: false,
     isMuted: false,
     signalQuality: 'none', // 'none' | 'good' | 'medium' | 'poor'
+    channelHealth: {},     // { url: 'ok' | 'error' } — tracks tested channels
     retryCount: 0,
     retryTimer: null,
     controlsTimer: null,
@@ -382,6 +383,7 @@ const Player = {
             this._fireState('playing');
             this._updatePlayPauseIcon();
             this._resetControlsTimer();
+            if (this.currentChannel) this.channelHealth[this.currentChannel.url] = 'ok';
         });
 
         this.video.addEventListener('pause', () => {
@@ -403,6 +405,7 @@ const Player = {
         this.video.addEventListener('error', () => {
             const error = this.video.error;
             const msg = error ? `Error de video: código ${error.code}` : 'Error desconocido';
+            if (this.currentChannel) this.channelHealth[this.currentChannel.url] = 'error';
             this._handlePlaybackError(msg);
         });
 
@@ -427,6 +430,7 @@ const Player = {
                         this.hls.startLoad();
                         this._scheduleRetry();
                     } else {
+                        if (this.currentChannel) this.channelHealth[this.currentChannel.url] = 'error';
                         this._showError('Error de red. No se puede conectar al canal.');
                     }
                     break;

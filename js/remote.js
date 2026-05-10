@@ -11,6 +11,7 @@ const Remote = {
     channels: [],
     favorites: [],
     recents: [],
+    channelHealth: {},
     groups: [],
     currentTab: 'channels',
     currentCategory: 'all',
@@ -314,10 +315,12 @@ const Remote = {
         list.innerHTML = chs.slice(0, max).map(ch => {
             const playing = ch.url === currentUrl ? 'playing' : '';
             const isFav = this.favorites.includes(ch.url) ? 'is-fav' : '';
+            const health = this.channelHealth[ch.url] || 'unknown';
             const logoHtml = ch.logo
                 ? `<img class="r-ch-logo" src="${this._esc(ch.logo)}" alt="" loading="lazy" onerror="this.style.display='none'">`
                 : '';
             return `<div class="r-ch-item ${playing} ${isFav}" data-url="${this._esc(ch.url)}">
+                <span class="r-ch-health r-ch-health-${health}" title="${health === 'ok' ? 'Funciona' : health === 'error' ? 'Sin señal' : 'No probado'}"></span>
                 <span class="r-ch-num">${ch.number}</span>
                 ${logoHtml}
                 <div class="r-ch-info">
@@ -540,6 +543,7 @@ const Remote = {
         // Favorites & recents
         if (state.favorites) this.favorites = state.favorites;
         if (state.recents) this.recents = state.recents;
+        if (state.channelHealth) this.channelHealth = state.channelHealth;
 
         // Favorite button
         const favBtn = document.getElementById('r-np-fav-btn');
