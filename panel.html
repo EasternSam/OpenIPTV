@@ -137,6 +137,118 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast hidden"></div>
 
-    <script src="js/panel.js"></script>
+    <script>
+    const Panel = {
+        API: '/api.php',
+        data: { playlists: [], lastPlaylist: null, favorites: [] },
+        serverAvailable: false,
+        async init() {
+            this.bindEvents();
+            await this.fetchData();
+        },
+        bindEvents() {
+            document.getElementById('btn-add-playlist').addEventListener('click', () => {
+                document.getElementById('modal-add').classList.remove('hidden');
+            });
+            const closeModal = () => {
+                document.getElementById('modal-add').classList.add('hidden');
+                document.getElementById('input-pl-url').value = '';
+                document.getElementById('input-pl-name').value = '';
+            };
+            document.getElementById('btn-close-modal').addEventListener('click', closeModal);
+            document.getElementById('btn-cancel').addEventListener('click', closeModal);
+            document.querySelector('.modal-backdrop').addEventListener('click', closeModal);
+            document.getElementById('btn-save').addEventListener('click', () => this.addPlaylist());
+            document.getElementById('btn-refresh').addEventListener('click', () => this.fetchData());
+        },
+        async fetchData() {
+            this.renderLoading();
+            try {
+                const res = await fetch(this.API + '?action=data', { signal: AbortSignal.timeout(5000) });
+                if (res.ok) {
+                    this.data = await res.json();
+                    this.serverAvailable = true;
+                } else throw new Error('err');
+            } catch (e) {
+                this.data = {
+                    playlists: this._gl('openiptv_playlists', []),
+                    lastPlaylist: this._gl('openiptv_last_playlist', null),
+                    favorites: this._gl('openiptv_favorites', []),
+                };
+                this.serverAvailable = false;
+            }
+            this.updateStats();
+            this.renderGrid();
+        },
+        _gl(k, f) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : f; } catch(e) { return f; } },
+        updateStats() {
+            document.getElementById('stat-count').textContent = this.data.playlists?.length || 0;
+            let dn = 'Ninguna';
+            if (this.data.lastPlaylist) {
+                const dp = this.data.playlists.find(p => p.url === this.data.lastPlaylist);
+                dn = dp ? dp.name : 'Desconocida';
+            }
+            document.getElementById('stat-default').textContent = dn;
+            const s = document.getElementById('server-status');
+            if (s) { s.textContent = this.serverAvailable ? '🟢 Servidor OK' : '🟡 Modo local'; s.style.color = this.serverAvailable ? '#4ade80' : '#fbbf24'; }
+        },
+        renderGrid() {
+            const grid = document.getElementById('playlist-grid');
+            grid.innerHTML = '';
+            if (!this.data.playlists || this.data.playlists.length === 0) {
+                grid.innerHTML = '<div class="loading-state"><p>No hay listas configuradas.</p></div>';
+                return;
+            }
+            this.data.playlists.forEach(pl => {
+                const isDef = this.data.lastPlaylist === pl.url;
+                const date = new Date(pl.addedAt || Date.now()).toLocaleDateString();
+                const card = document.createElement('div');
+                card.className = 'playlist-card' + (isDef ? ' is-default' : '');
+                let h = isDef ? '<div class="default-badge">Principal</div>' : '';
+                h += '<h3 class="pl-name">' + this.esc(pl.name) + '</h3>' +
+                    '<div class="pl-url" title="' + this.esc(pl.url) + '">' + this.esc(pl.url) + '</div>' +
+                    '<div style="font-size:12px;color:var(--text-muted);margin-bottom:16px">Añadida: ' + date + '</div>' +
+                    '<div class="pl-actions">' +
+                    '<button class="btn-small btn-set-default"' + (isDef ? ' disabled style="opacity:.5;cursor:not-allowed"' : '') + '>Hacer Principal</button>' +
+                    '<button class="btn-small btn-danger btn-delete">Eliminar</button></div>';
+                card.innerHTML = h;
+                if (!isDef) card.querySelector('.btn-set-default')?.addEventListener('click', () => this.setDefault(pl.url));
+                card.querySelector('.btn-delete')?.addEventListener('click', () => { if (confirm('¿Eliminar?')) this.deletePlaylist(pl.url); });
+                grid.appendChild(card);
+            });
+        },
+        async addPlaylist() {
+            const url = document.getElementById('input-pl-url').value.trim();
+            const name = document.getElementById('input-pl-name').value.trim() || 'Playlist';
+            if (!url) { this.showToast('❌ URL obligatoria'); return; }
+            const btn = document.getElementById('btn-save');
+            btn.textContent = 'Guardando...'; btn.disabled = true;
+            try {
+                await fetch(this.API + '?action=playlists', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url, name }) });
+                this.showToast('✅ Añadida');
+                document.getElementById('btn-close-modal').click();
+                await this.fetchData();
+            } catch (e) { this.showToast('❌ Error'); }
+            btn.textContent = 'Guardar Playlist'; btn.disabled = false;
+        },
+        async deletePlaylist(url) {
+            try { await fetch(this.API + '?action=playlists', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) }); } catch(e) {}
+            this.showToast('🗑️ Eliminada'); this.fetchData();
+        },
+        async setDefault(url) {
+            try { await fetch(this.API + '?action=last-playlist', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) }); } catch(e) {}
+            this.showToast('🌟 Actualizada'); this.fetchData();
+        },
+        renderLoading() { document.getElementById('playlist-grid').innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Cargando...</p></div>'; },
+        showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg; t.classList.remove('hidden'); t.classList.add('show');
+            clearTimeout(this._tt);
+            this._tt = setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.classList.add('hidden'), 300); }, 3000);
+        },
+        esc(s) { return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : ''; }
+    };
+    document.addEventListener('DOMContentLoaded', () => Panel.init());
+    </script>
 </body>
 </html>
