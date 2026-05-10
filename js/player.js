@@ -165,15 +165,72 @@ const Player = {
         this.video.classList.add('hidden');
         this.iframe.classList.remove('hidden');
         
-        this.iframe.src = url;
+        // Append autoplay params if not already present
+        let autoUrl = url;
+        try {
+            const u = new URL(url);
+            if (!u.searchParams.has('autoplay')) u.searchParams.set('autoplay', '1');
+            if (!u.searchParams.has('muted')) u.searchParams.set('muted', '0');
+            if (!u.searchParams.has('auto_play')) u.searchParams.set('auto_play', '1');
+            autoUrl = u.toString();
+        } catch { /* URL parsing failed, use original */ }
+
+        this.iframe.src = autoUrl;
         this.isPlaying = true;
         this._showLoading(false);
         this._updatePlayPauseIcon();
+        if (this.currentChannel) this.channelHealth[this.currentChannel.url] = 'ok';
         
-        // Enfocar el iframe para que reciba los eventos del control remoto en la TV (necesario para dar Play)
+        // After iframe loads, try to simulate click to trigger play
+        this.iframe.onload = () => {
+            this._tryIframeAutoplay();
+        };
+
+        // Focus iframe so keyboard/remote events reach it
         setTimeout(() => {
             if (this.iframe) this.iframe.focus();
         }, 500);
+    },
+
+    /* ─── Try to autoplay inside iframe ─── */
+    _tryIframeAutoplay() {
+        // Try clicking inside the iframe at multiple intervals
+        // Some players need a moment to initialize before accepting clicks
+        const attempts = [800, 1500, 3000, 5000];
+        attempts.forEach(delay => {
+            setTimeout(() => {
+                try {
+                    // Try to access iframe content (only works same-origin)
+                    const doc = this.iframe.contentDocument || this.iframe.contentWindow?.document;
+                    if (doc) {
+                        // Try to find and click play buttons
+                        const playBtn = doc.querySelector(
+                            'button[class*="play"], .vjs-big-play-button, .play-button, ' +
+                            '[aria-label*="play" i], [aria-label*="Play" i], ' +
+                            '.jw-icon-playback, .plyr__control--overlaid, ' +
+                            'video'
+                        );
+                        if (playBtn) {
+                            playBtn.click();
+                            return;
+                        }
+                        // Try to play any video element directly
+                        const video = doc.querySelector('video');
+                        if (video) {
+                            video.muted = false;
+                            video.play().catch(() => {});
+                        }
+                    }
+                } catch {
+                    // Cross-origin: can't access iframe content
+                    // Simulate a mouse click on the iframe element itself
+                    // This triggers the iframe to receive a user gesture
+                    if (this.iframe) {
+                        this.iframe.focus();
+                    }
+                }
+            }, delay);
+        });
     },
 
     /* ─── Helper to prepare video element ─── */
