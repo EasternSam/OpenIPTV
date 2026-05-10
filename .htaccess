@@ -3,3 +3,9 @@ RewriteEngine On
 # Redirigir rutas limpias a archivos HTML
 RewriteRule ^remote$ /remote.html [L]
 RewriteRule ^panel$ /panel.html [L]
+
+# Redirigir API de Node.js al PHP API
+RewriteRule ^api/data$ /api.php?action=data [L,QSA]
+RewriteRule ^api/playlists$ /api.php?action=playlists [L,QSA]
+RewriteRule ^api/last-playlist$ /api.php?action=last-playlist [L,QSA]
+RewriteRule ^api/favorites$ /api.php?action=favorites [L,QSA]
