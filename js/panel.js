@@ -1,6 +1,6 @@
 const Panel = {
     API_BASE: '/api',
-    data: { playlists: [], lastPlaylist: null },
+    data: { playlists: [], lastPlaylist: null, favorites: [] },
 
     async init() {
         this.bindEvents();
@@ -8,7 +8,6 @@ const Panel = {
     },
 
     bindEvents() {
-        // Modal toggles
         document.getElementById('btn-add-playlist').addEventListener('click', () => {
             document.getElementById('modal-add').classList.remove('hidden');
         });
@@ -23,31 +22,51 @@ const Panel = {
         document.getElementById('btn-cancel').addEventListener('click', closeModal);
         document.querySelector('.modal-backdrop').addEventListener('click', closeModal);
 
-        // Save
         document.getElementById('btn-save').addEventListener('click', () => this.addPlaylist());
-
-        // Refresh
         document.getElementById('btn-refresh').addEventListener('click', () => this.fetchData());
     },
 
     async fetchData() {
         this.renderLoading();
+
+        // Try server first, fallback to localStorage
+        let serverOk = false;
         try {
-            const res = await fetch(`${this.API_BASE}/data`);
-            if (!res.ok) throw new Error('Error al conectar con el servidor');
-            const data = await res.json();
-            this.data = data;
-            
-            // Render
-            this.updateStats();
-            this.renderGrid();
-        } catch (err) {
-            this.showToast('❌ ' + err.message);
-            document.getElementById('playlist-grid').innerHTML = `
-                <div class="loading-state" style="color: var(--danger)">
-                    <p>No se pudo cargar la información.</p>
-                </div>`;
+            const res = await fetch(`${this.API_BASE}/data`, { signal: AbortSignal.timeout(3000) });
+            if (res.ok) {
+                const data = await res.json();
+                this.data = data;
+                // Sync to localStorage
+                this._setLocal('openiptv_playlists', data.playlists || []);
+                this._setLocal('openiptv_last_playlist', data.lastPlaylist);
+                this._setLocal('openiptv_favorites', data.favorites || []);
+                serverOk = true;
+            }
+        } catch (err) { /* server unavailable */ }
+
+        if (!serverOk) {
+            // Read from localStorage
+            this.data = {
+                playlists: this._getLocal('openiptv_playlists', []),
+                lastPlaylist: this._getLocal('openiptv_last_playlist', null),
+                favorites: this._getLocal('openiptv_favorites', []),
+            };
         }
+
+        this.serverAvailable = serverOk;
+        this.updateStats();
+        this.renderGrid();
+    },
+
+    _getLocal(key, fallback) {
+        try {
+            const v = localStorage.getItem(key);
+            return v ? JSON.parse(v) : fallback;
+        } catch (e) { return fallback; }
+    },
+
+    _setLocal(key, value) {
+        try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
     },
 
     updateStats() {
@@ -59,6 +78,13 @@ const Panel = {
             defaultName = defPl ? defPl.name : 'URL Desconocida';
         }
         document.getElementById('stat-default').textContent = defaultName;
+
+        // Show server status
+        const statusEl = document.getElementById('server-status');
+        if (statusEl) {
+            statusEl.textContent = this.serverAvailable ? '🟢 Servidor activo' : '🟡 Modo local (sin servidor)';
+            statusEl.style.color = this.serverAvailable ? '#4ade80' : '#fbbf24';
+        }
     },
 
     renderGrid() {
@@ -68,13 +94,15 @@ const Panel = {
         if (!this.data.playlists || this.data.playlists.length === 0) {
             grid.innerHTML = `
                 <div class="loading-state">
-                    <p>No hay listas configuradas en el servidor.</p>
+                    <p>No hay listas configuradas.</p>
+                    <p style="font-size: 14px; color: var(--text-muted); margin-top: 8px;">Haz clic en "Añadir Playlist" para agregar una.</p>
                 </div>`;
             return;
         }
 
         this.data.playlists.forEach(pl => {
             const isDefault = this.data.lastPlaylist === pl.url;
+            const isFav = (this.data.favorites || []).includes(pl.url);
             const date = new Date(pl.addedAt || Date.now()).toLocaleDateString();
 
             const card = document.createElement('div');
@@ -95,7 +123,6 @@ const Panel = {
             
             card.innerHTML = html;
 
-            // Events
             const btnDefault = card.querySelector('.btn-set-default');
             if (btnDefault && !isDefault) {
                 btnDefault.addEventListener('click', () => this.setDefault(pl.url));
@@ -104,7 +131,7 @@ const Panel = {
             const btnDelete = card.querySelector('.btn-delete');
             if (btnDelete) {
                 btnDelete.addEventListener('click', () => {
-                    if (confirm('¿Estás seguro de eliminar esta lista para todos los usuarios?')) {
+                    if (confirm('¿Estás seguro de eliminar esta lista?')) {
                         this.deletePlaylist(pl.url);
                     }
                 });
@@ -116,7 +143,7 @@ const Panel = {
 
     async addPlaylist() {
         const url = document.getElementById('input-pl-url').value.trim();
-        const name = document.getElementById('input-pl-name').value.trim();
+        const name = document.getElementById('input-pl-name').value.trim() || this._extractName(url);
 
         if (!url) {
             this.showToast('❌ La URL es obligatoria');
@@ -128,15 +155,26 @@ const Panel = {
         btn.disabled = true;
 
         try {
-            const res = await fetch(`${this.API_BASE}/playlists`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url, name })
-            });
+            // Save to localStorage first (always works)
+            const playlists = this._getLocal('openiptv_playlists', []);
+            const filtered = playlists.filter(p => p.url !== url);
+            filtered.unshift({ url, name, addedAt: Date.now() });
+            this._setLocal('openiptv_playlists', filtered);
+            if (!this._getLocal('openiptv_last_playlist', null)) {
+                this._setLocal('openiptv_last_playlist', url);
+            }
 
-            if (!res.ok) throw new Error('Error al guardar');
+            // Try server sync
+            try {
+                await fetch(`${this.API_BASE}/playlists`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, name }),
+                    signal: AbortSignal.timeout(3000),
+                });
+            } catch (e) { /* server offline, localStorage is enough */ }
             
-            this.showToast('✅ Playlist añadida correctamente');
+            this.showToast('✅ Playlist añadida');
             document.getElementById('btn-close-modal').click();
             this.fetchData();
         } catch (err) {
@@ -149,12 +187,19 @@ const Panel = {
 
     async deletePlaylist(url) {
         try {
-            const res = await fetch(`${this.API_BASE}/playlists`, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url })
-            });
-            if (!res.ok) throw new Error('Error al eliminar');
+            // Remove from localStorage
+            const playlists = this._getLocal('openiptv_playlists', []);
+            this._setLocal('openiptv_playlists', playlists.filter(p => p.url !== url));
+
+            // Try server
+            try {
+                await fetch(`${this.API_BASE}/playlists`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url }),
+                    signal: AbortSignal.timeout(3000),
+                });
+            } catch (e) {}
             
             this.showToast('🗑️ Playlist eliminada');
             this.fetchData();
@@ -165,18 +210,29 @@ const Panel = {
 
     async setDefault(url) {
         try {
-            const res = await fetch(`${this.API_BASE}/last-playlist`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url })
-            });
-            if (!res.ok) throw new Error('Error al configurar principal');
+            this._setLocal('openiptv_last_playlist', url);
+            try {
+                await fetch(`${this.API_BASE}/last-playlist`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url }),
+                    signal: AbortSignal.timeout(3000),
+                });
+            } catch (e) {}
             
             this.showToast('🌟 Lista principal actualizada');
             this.fetchData();
         } catch (err) {
             this.showToast('❌ ' + err.message);
         }
+    },
+
+    _extractName(url) {
+        try {
+            const u = new URL(url);
+            const p = u.pathname.split('/').pop();
+            return p ? p.replace(/\.(m3u8?|txt)$/i, '') : u.hostname;
+        } catch(e) { return 'Playlist'; }
     },
 
     renderLoading() {
