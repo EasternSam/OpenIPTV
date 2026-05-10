@@ -796,7 +796,7 @@ var App = {
             sidebar.classList.add('sidebar-show');
             sidebar.classList.remove('collapsed');
             Navigation.setArea('sidebar');
-            setTimeout(function() sidebar.classList.remove('sidebar-show'), 300);
+            setTimeout(() => sidebar.classList.remove('sidebar-show'), 300);
         } else {
             sidebar.classList.add('collapsed');
             Navigation.setArea('player');
