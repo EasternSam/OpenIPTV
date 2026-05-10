@@ -3,13 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Administración M3U - OpenIPTV</title>
+    <title>Panel de Administración - OpenIPTV</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="css/panel.css">
+    <style>
+        /* ─── Favorites Section ─── */
+        .tabs { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 2px solid rgba(255,255,255,0.06); }
+        .tab-btn { padding: 12px 24px; background: none; border: none; color: var(--text-muted); font-family: inherit; font-size: 15px; font-weight: 500; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+        .tab-btn:hover { color: var(--text-primary, #e2e8f0); }
+        .tab-btn.active { color: var(--primary, #818cf8); border-bottom-color: var(--primary, #818cf8); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .fav-search { width: 100%; padding: 12px 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.3); color: #e2e8f0; font-family: inherit; font-size: 14px; margin-bottom: 16px; outline: none; transition: border-color 0.2s; }
+        .fav-search:focus { border-color: rgba(129,140,248,0.5); }
+        .fav-search::placeholder { color: rgba(255,255,255,0.3); }
+
+        .fav-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 12px; flex-wrap: wrap; }
+        .fav-toolbar select { padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.3); color: #e2e8f0; font-family: inherit; font-size: 13px; outline: none; }
+        .fav-count { font-size: 13px; color: rgba(255,255,255,0.4); }
+        .fav-loading { text-align: center; padding: 40px; color: rgba(255,255,255,0.4); }
+
+        .ch-list { max-height: 60vh; overflow-y: auto; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); }
+        .ch-row { display: flex; align-items: center; padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.04); gap: 12px; transition: background 0.15s; }
+        .ch-row:last-child { border-bottom: none; }
+        .ch-row:hover { background: rgba(255,255,255,0.03); }
+        .ch-num { min-width: 36px; font-size: 12px; color: rgba(255,255,255,0.3); text-align: center; font-weight: 600; }
+        .ch-name { flex: 1; font-size: 14px; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ch-group { font-size: 11px; color: rgba(255,255,255,0.3); max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ch-fav-btn { width: 36px; height: 36px; border-radius: 8px; border: none; background: rgba(255,255,255,0.05); cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; }
+        .ch-fav-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); }
+        .ch-fav-btn.is-fav { background: rgba(250,204,21,0.15); }
+    </style>
 </head>
 <body>
     <div class="app-container">
@@ -27,11 +56,17 @@
             </div>
             
             <nav class="nav-menu">
-                <a href="#" class="nav-item active">
+                <a href="#" class="nav-item active" data-tab="playlists">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
                         <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                     </svg>
-                    Gestión de Playlists
+                    Playlists
+                </a>
+                <a href="#" class="nav-item" data-tab="favorites">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                    Favoritos
                 </a>
                 <a href="/" class="nav-item" target="_blank">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
@@ -39,7 +74,7 @@
                         <line x1="8" y1="21" x2="16" y2="21"/>
                         <line x1="12" y1="17" x2="12" y2="21"/>
                     </svg>
-                    Abrir Reproductor
+                    Reproductor
                 </a>
             </nav>
         </aside>
@@ -48,8 +83,8 @@
         <main class="main-content">
             <header class="topbar">
                 <div class="topbar-left">
-                    <h1>Panel de Gestión M3U</h1>
-                    <p>Administra las listas globales del servidor</p>
+                    <h1 id="page-title">Playlists</h1>
+                    <p id="page-desc">Administra las listas de canales</p>
                 </div>
                 <div class="topbar-right">
                     <button id="btn-add-playlist" class="btn-primary">
@@ -71,10 +106,10 @@
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon">🌟</div>
+                    <div class="stat-icon">⭐</div>
                     <div class="stat-info">
-                        <h3>Lista por Defecto</h3>
-                        <p id="stat-default">Ninguna</p>
+                        <h3>Favoritos</h3>
+                        <p id="stat-favs">0</p>
                     </div>
                 </div>
                 <div class="stat-card">
@@ -86,26 +121,47 @@
                 </div>
             </div>
 
-            <div class="content-section">
-                <div class="section-header">
-                    <h2>Playlists Guardadas en el Servidor</h2>
-                    <button id="btn-refresh" class="btn-icon" title="Actualizar">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-                            <polyline points="23 4 23 10 17 10"/>
-                            <polyline points="1 20 1 14 7 14"/>
-                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-                        </svg>
-                    </button>
-                </div>
-
-                <div class="playlist-grid" id="playlist-grid">
-                    <!-- Playlists will be injected here -->
-                    <div class="loading-state">
-                        <div class="spinner"></div>
-                        <p>Cargando playlists...</p>
+            <!-- TAB: Playlists -->
+            <div class="tab-content active" id="tab-playlists">
+                <div class="content-section">
+                    <div class="section-header">
+                        <h2>Playlists Guardadas</h2>
+                        <button id="btn-refresh" class="btn-icon" title="Actualizar">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                                <polyline points="23 4 23 10 17 10"/>
+                                <polyline points="1 20 1 14 7 14"/>
+                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="playlist-grid" id="playlist-grid">
+                        <div class="loading-state"><div class="spinner"></div><p>Cargando...</p></div>
                     </div>
                 </div>
             </div>
+
+            <!-- TAB: Favorites -->
+            <div class="tab-content" id="tab-favorites">
+                <div class="content-section">
+                    <div class="section-header">
+                        <h2>Gestión de Favoritos</h2>
+                        <span class="fav-count" id="fav-total"></span>
+                    </div>
+                    <input type="text" class="fav-search" id="fav-search" placeholder="🔍 Buscar canal por nombre...">
+                    <div class="fav-toolbar">
+                        <select id="fav-group-filter">
+                            <option value="all">Todos los grupos</option>
+                        </select>
+                        <label style="font-size:13px;color:rgba(255,255,255,0.5);display:flex;align-items:center;gap:6px;">
+                            <input type="checkbox" id="fav-only-toggle"> Solo favoritos
+                        </label>
+                    </div>
+                    <div class="ch-list" id="ch-list">
+                        <div class="fav-loading">Cargando canales...</div>
+                    </div>
+                </div>
+            </div>
+
         </main>
     </div>
 
@@ -134,41 +190,72 @@
         </div>
     </div>
 
-    <!-- Notification Toast -->
+    <!-- Toast -->
     <div id="toast" class="toast hidden"></div>
 
     <script>
     const Panel = {
         API: '/api.php',
         data: { playlists: [], lastPlaylist: null, favorites: [] },
+        allChannels: [],
+        groups: [],
         serverAvailable: false,
+        currentTab: 'playlists',
+
         async init() {
             this.bindEvents();
             await this.fetchData();
         },
+
         bindEvents() {
-            document.getElementById('btn-add-playlist').addEventListener('click', () => {
-                document.getElementById('modal-add').classList.remove('hidden');
+            // Tab navigation
+            document.querySelectorAll('.nav-item[data-tab]').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.switchTab(item.dataset.tab);
+                });
             });
-            const closeModal = () => {
-                document.getElementById('modal-add').classList.add('hidden');
-                document.getElementById('input-pl-url').value = '';
-                document.getElementById('input-pl-name').value = '';
-            };
+
+            // Modal
+            document.getElementById('btn-add-playlist').addEventListener('click', () => document.getElementById('modal-add').classList.remove('hidden'));
+            const closeModal = () => { document.getElementById('modal-add').classList.add('hidden'); document.getElementById('input-pl-url').value = ''; document.getElementById('input-pl-name').value = ''; };
             document.getElementById('btn-close-modal').addEventListener('click', closeModal);
             document.getElementById('btn-cancel').addEventListener('click', closeModal);
             document.querySelector('.modal-backdrop').addEventListener('click', closeModal);
             document.getElementById('btn-save').addEventListener('click', () => this.addPlaylist());
             document.getElementById('btn-refresh').addEventListener('click', () => this.fetchData());
+
+            // Favorites filters
+            document.getElementById('fav-search').addEventListener('input', () => this.renderChannelList());
+            document.getElementById('fav-group-filter').addEventListener('change', () => this.renderChannelList());
+            document.getElementById('fav-only-toggle').addEventListener('change', () => this.renderChannelList());
         },
+
+        switchTab(tab) {
+            this.currentTab = tab;
+            document.querySelectorAll('.nav-item[data-tab]').forEach(n => n.classList.remove('active'));
+            document.querySelector(`.nav-item[data-tab="${tab}"]`).classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+
+            if (tab === 'playlists') {
+                document.getElementById('page-title').textContent = 'Playlists';
+                document.getElementById('page-desc').textContent = 'Administra las listas de canales';
+                document.getElementById('btn-add-playlist').style.display = '';
+            } else {
+                document.getElementById('page-title').textContent = 'Favoritos';
+                document.getElementById('page-desc').textContent = 'Marca canales para verlos primero en el TV';
+                document.getElementById('btn-add-playlist').style.display = 'none';
+                if (this.allChannels.length === 0) this.loadAllChannels();
+            }
+        },
+
         async fetchData() {
             this.renderLoading();
             try {
                 const res = await fetch(this.API + '?action=data', { signal: AbortSignal.timeout(5000) });
-                if (res.ok) {
-                    this.data = await res.json();
-                    this.serverAvailable = true;
-                } else throw new Error('err');
+                if (res.ok) { this.data = await res.json(); this.serverAvailable = true; }
+                else throw new Error('err');
             } catch (e) {
                 this.data = {
                     playlists: this._gl('openiptv_playlists', []),
@@ -180,23 +267,24 @@
             this.updateStats();
             this.renderGrid();
         },
+
         _gl(k, f) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : f; } catch(e) { return f; } },
+
         updateStats() {
             document.getElementById('stat-count').textContent = this.data.playlists?.length || 0;
-            let dn = 'Ninguna';
-            if (this.data.lastPlaylist) {
-                const dp = this.data.playlists.find(p => p.url === this.data.lastPlaylist);
-                dn = dp ? dp.name : 'Desconocida';
-            }
-            document.getElementById('stat-default').textContent = dn;
+            document.getElementById('stat-favs').textContent = this.data.favorites?.length || 0;
             const s = document.getElementById('server-status');
-            if (s) { s.textContent = this.serverAvailable ? '🟢 Servidor OK' : '🟡 Modo local'; s.style.color = this.serverAvailable ? '#4ade80' : '#fbbf24'; }
+            if (s) { s.textContent = this.serverAvailable ? '🟢 OK' : '🟡 Local'; s.style.color = this.serverAvailable ? '#4ade80' : '#fbbf24'; }
         },
+
+        // ═══════════════════════════════════
+        // PLAYLISTS TAB
+        // ═══════════════════════════════════
         renderGrid() {
             const grid = document.getElementById('playlist-grid');
             grid.innerHTML = '';
             if (!this.data.playlists || this.data.playlists.length === 0) {
-                grid.innerHTML = '<div class="loading-state"><p>No hay listas configuradas.</p></div>';
+                grid.innerHTML = '<div class="loading-state"><p>No hay listas. Haz clic en "Añadir Playlist".</p></div>';
                 return;
             }
             this.data.playlists.forEach(pl => {
@@ -204,19 +292,19 @@
                 const date = new Date(pl.addedAt || Date.now()).toLocaleDateString();
                 const card = document.createElement('div');
                 card.className = 'playlist-card' + (isDef ? ' is-default' : '');
-                let h = isDef ? '<div class="default-badge">Principal</div>' : '';
-                h += '<h3 class="pl-name">' + this.esc(pl.name) + '</h3>' +
+                card.innerHTML = (isDef ? '<div class="default-badge">Principal</div>' : '') +
+                    '<h3 class="pl-name">' + this.esc(pl.name) + '</h3>' +
                     '<div class="pl-url" title="' + this.esc(pl.url) + '">' + this.esc(pl.url) + '</div>' +
                     '<div style="font-size:12px;color:var(--text-muted);margin-bottom:16px">Añadida: ' + date + '</div>' +
                     '<div class="pl-actions">' +
-                    '<button class="btn-small btn-set-default"' + (isDef ? ' disabled style="opacity:.5;cursor:not-allowed"' : '') + '>Hacer Principal</button>' +
+                    '<button class="btn-small btn-set-default"' + (isDef ? ' disabled style="opacity:.5"' : '') + '>Principal</button>' +
                     '<button class="btn-small btn-danger btn-delete">Eliminar</button></div>';
-                card.innerHTML = h;
                 if (!isDef) card.querySelector('.btn-set-default')?.addEventListener('click', () => this.setDefault(pl.url));
                 card.querySelector('.btn-delete')?.addEventListener('click', () => { if (confirm('¿Eliminar?')) this.deletePlaylist(pl.url); });
                 grid.appendChild(card);
             });
         },
+
         async addPlaylist() {
             const url = document.getElementById('input-pl-url').value.trim();
             const name = document.getElementById('input-pl-name').value.trim() || 'Playlist';
@@ -239,6 +327,127 @@
             try { await fetch(this.API + '?action=last-playlist', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) }); } catch(e) {}
             this.showToast('🌟 Actualizada'); this.fetchData();
         },
+
+        // ═══════════════════════════════════
+        // FAVORITES TAB
+        // ═══════════════════════════════════
+        async loadAllChannels() {
+            document.getElementById('ch-list').innerHTML = '<div class="fav-loading"><div class="spinner"></div> Descargando canales de ' + this.data.playlists.length + ' lista(s)...</div>';
+            this.allChannels = [];
+            this.groups = [];
+            const urlSet = {};
+            const grpSet = {};
+
+            for (const pl of this.data.playlists) {
+                try {
+                    const res = await fetch(pl.url, { signal: AbortSignal.timeout(15000) });
+                    if (!res.ok) continue;
+                    const text = await res.text();
+                    this.parseM3U(text, pl.name || 'Playlist', urlSet, grpSet);
+                } catch(e) { console.warn('Failed to load:', pl.url); }
+            }
+
+            this.groups = Object.keys(grpSet).sort();
+            // Populate group filter
+            const sel = document.getElementById('fav-group-filter');
+            sel.innerHTML = '<option value="all">Todos (' + this.allChannels.length + ')</option>';
+            this.groups.forEach(g => {
+                const c = this.allChannels.filter(ch => ch.group === g).length;
+                sel.innerHTML += '<option value="' + this.esc(g) + '">' + this.esc(g) + ' (' + c + ')</option>';
+            });
+
+            document.getElementById('fav-total').textContent = this.allChannels.length + ' canales • ' + (this.data.favorites?.length || 0) + ' favoritos';
+            this.renderChannelList();
+        },
+
+        parseM3U(text, plName, urlSet, grpSet) {
+            const lines = text.split('\n');
+            let name = '', group = '', url = '';
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line.startsWith('#EXTINF')) {
+                    const ci = line.lastIndexOf(',');
+                    name = ci > -1 ? line.substring(ci + 1).trim() : 'Canal';
+                    const gm = line.match(/group-title="([^"]*)"/);
+                    group = gm ? gm[1] : '';
+                    if (name.includes('|iframe')) name = name.replace('|iframe', '').trim();
+                } else if (line && !line.startsWith('#')) {
+                    url = line;
+                    if (name && url && !urlSet[url]) {
+                        const grp = group || plName;
+                        this.allChannels.push({ name, group: grp, url, num: this.allChannels.length + 1 });
+                        urlSet[url] = true;
+                        grpSet[grp] = true;
+                    }
+                    name = ''; group = ''; url = '';
+                }
+            }
+        },
+
+        renderChannelList() {
+            const search = document.getElementById('fav-search').value.toLowerCase().trim();
+            const groupFilter = document.getElementById('fav-group-filter').value;
+            const onlyFavs = document.getElementById('fav-only-toggle').checked;
+            const favs = this.data.favorites || [];
+
+            let filtered = this.allChannels.filter(ch => {
+                if (search && !ch.name.toLowerCase().includes(search)) return false;
+                if (groupFilter !== 'all' && ch.group !== groupFilter) return false;
+                if (onlyFavs && !favs.includes(ch.url)) return false;
+                return true;
+            });
+
+            const list = document.getElementById('ch-list');
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="fav-loading">Sin resultados</div>';
+                return;
+            }
+
+            // Render max 200 for performance
+            const max = Math.min(filtered.length, 200);
+            let html = '';
+            for (let i = 0; i < max; i++) {
+                const ch = filtered[i];
+                const isFav = favs.includes(ch.url);
+                html += '<div class="ch-row">' +
+                    '<span class="ch-num">' + ch.num + '</span>' +
+                    '<span class="ch-name">' + this.esc(ch.name) + '</span>' +
+                    '<span class="ch-group">' + this.esc(ch.group) + '</span>' +
+                    '<button class="ch-fav-btn' + (isFav ? ' is-fav' : '') + '" data-url="' + this.esc(ch.url) + '">' + (isFav ? '⭐' : '☆') + '</button>' +
+                    '</div>';
+            }
+            if (filtered.length > max) html += '<div class="fav-loading">Mostrando ' + max + ' de ' + filtered.length + '. Usa el buscador para filtrar.</div>';
+
+            list.innerHTML = html;
+
+            // Bind toggle events
+            list.querySelectorAll('.ch-fav-btn').forEach(btn => {
+                btn.addEventListener('click', () => this.toggleFavorite(btn.dataset.url, btn));
+            });
+        },
+
+        async toggleFavorite(url, btn) {
+            try {
+                const res = await fetch(this.API + '?action=favorites', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+                if (res.ok) {
+                    const result = await res.json();
+                    this.data.favorites = result.favorites;
+                    btn.textContent = result.isFavorite ? '⭐' : '☆';
+                    btn.classList.toggle('is-fav', result.isFavorite);
+                    this.updateStats();
+                    document.getElementById('fav-total').textContent = this.allChannels.length + ' canales • ' + this.data.favorites.length + ' favoritos';
+                    this.showToast(result.isFavorite ? '⭐ Añadido a favoritos' : '☆ Quitado de favoritos');
+                }
+            } catch(e) { this.showToast('❌ Error al guardar'); }
+        },
+
+        // ═══════════════════════════════════
+        // SHARED
+        // ═══════════════════════════════════
         renderLoading() { document.getElementById('playlist-grid').innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Cargando...</p></div>'; },
         showToast(msg) {
             const t = document.getElementById('toast');
@@ -246,7 +455,7 @@
             clearTimeout(this._tt);
             this._tt = setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.classList.add('hidden'), 300); }, 3000);
         },
-        esc(s) { return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : ''; }
+        esc(s) { return s ? s.toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : ''; }
     };
     document.addEventListener('DOMContentLoaded', () => Panel.init());
     </script>
