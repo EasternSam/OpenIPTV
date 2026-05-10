@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, initial-scale=1.0">
+    <title>OpenIPTV</title>
+    <link rel="stylesheet" href="css/app.css">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js"></script>
+</head>
+<body>
+    <!-- SPLASH -->
+    <div id="splash" class="splash">
+        <div class="splash-inner">
+            <div class="splash-icon">▶</div>
+            <div class="splash-title">Open<span>IPTV</span></div>
+            <div class="splash-bar"><div class="splash-progress"></div></div>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="main" class="screen" style="display:none">
+        <!-- Video fills the background -->
+        <video id="video" autoplay playsinline></video>
+        <iframe id="iframe" allowfullscreen allow="autoplay; fullscreen" frameborder="0"></iframe>
+
+        <!-- Loading / No Playlists Message -->
+        <div id="loading-msg" class="loading-msg">Conectando...</div>
+
+        <!-- Channel Info OSD (top) -->
+        <div id="osd" class="osd" style="display:none">
+            <div class="osd-num" id="osd-num"></div>
+            <div class="osd-info">
+                <div class="osd-name" id="osd-name"></div>
+                <div class="osd-group" id="osd-group"></div>
+            </div>
+        </div>
+
+        <!-- Channel List Sidebar -->
+        <div id="sidebar" class="sidebar" style="display:none">
+            <div class="sidebar-header">
+                <h2>📺 Canales</h2>
+                <span id="ch-count" class="ch-count"></span>
+            </div>
+            <div class="sidebar-groups" id="groups"></div>
+            <div class="sidebar-list" id="channel-list"></div>
+            <div class="sidebar-footer">
+                OK = Seleccionar &nbsp;│&nbsp; ◄ Back = Cerrar &nbsp;│&nbsp; ▲▼ = Navegar
+            </div>
+        </div>
+
+        <!-- Number Input OSD -->
+        <div id="num-osd" class="num-osd" style="display:none">
+            <span id="num-display"></span>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

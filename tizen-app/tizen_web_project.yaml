@@ -27,11 +27,10 @@ trust_anchor: []
 
 # list of files in web project (.html,.css etc) and resources
 files:
-  - .manifest.tmp
-  - OpenIPTV.wgt
-  - author-signature.xml
+  - css/app.css
   - icon.png
-  - signature1.xml
+  - index.html
+  - js/app.js
 
 # list of files to exclude based on the matched patterns
 excludes:
