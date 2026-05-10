@@ -218,6 +218,36 @@ const server = http.createServer(async (req, res) => {
     }
 
     // ═══════════════════════════════════════
+    // CORS M3U PROXY API
+    // ═══════════════════════════════════════
+
+    if (url === '/api/proxy' && method === 'GET') {
+        var targetUrl = query.get('url');
+        if (!targetUrl) {
+            res.writeHead(400); res.end('Missing url param'); return;
+        }
+
+        const lib = targetUrl.startsWith('https') ? require('https') : require('http');
+        const opts = {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/plain, application/x-mpegurl, */*'
+            }
+        };
+
+        const proxyReq = lib.get(targetUrl, opts, (proxyRes) => {
+            res.writeHead(proxyRes.statusCode, {
+                'Content-Type': 'text/plain; charset=utf-8',
+                'Access-Control-Allow-Origin': '*'
+            });
+            proxyRes.pipe(res);
+        }).on('error', (err) => {
+            res.writeHead(500); res.end('Proxy error: ' + err.message);
+        });
+        return;
+    }
+
+    // ═══════════════════════════════════════
     // REMOTE CONTROL API
     // ═══════════════════════════════════════
 
