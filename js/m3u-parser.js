@@ -190,7 +190,7 @@ const M3UParser = {
         try {
             // Use local PHP proxy first, then fallbacks if needed
             const proxies = [
-                '/api/proxy?url=',
+                '/api.php?action=proxy&url=',
                 '', // Direct
                 'https://api.allorigins.win/raw?url=',
                 'https://corsproxy.io/?',
