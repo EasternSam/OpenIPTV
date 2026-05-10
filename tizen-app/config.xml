@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets"
+        id="http://openiptv.90s.agency"
+        version="1.0.0"
+        viewmodes="maximized">
+
+    <name>OpenIPTV</name>
+    <description>Reproductor IPTV premium para Samsung Smart TV</description>
+    <author href="https://github.com/EasternSam">EasternSam</author>
+    <icon src="icon.png"/>
+    <content src="https://iptv.90s.agency/"/>
+
+    <tizen:application id="KVDNDMFMi0.openiptv" package="KVDNDMFMi0" required_version="6.0"/>
+    <tizen:setting screen-orientation="landscape" context-menu="enable" background-support="disable" encryption="disable" install-location="auto" hwkey-event="enable"/>
+
+    <tizen:privilege name="http://tizen.org/privilege/internet"/>
+    <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
+
+    <access origin="*" subdomains="true"/>
+
+</widget>

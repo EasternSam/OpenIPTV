@@ -3,7 +3,7 @@
    D-pad (arrow keys) spatial navigation for Samsung TV remotes
    ══════════════════════════════════════════════════════════════ */
 
-const Navigation = {
+var Navigation = {
 
     // All focusable elements indexed
     focusableElements: [],
@@ -49,28 +49,28 @@ const Navigation = {
 
     /* ─── Initialize ─── */
     init() {
-        document.addEventListener('keydown', (e) => this._handleKeyDown(e));
+        document.addEventListener('keydown', function(e) this._handleKeyDown(e));
         
         // Mouse movement detection (hide cursor on TV, show on PC)
-        let mouseTimer;
-        document.addEventListener('mousemove', () => {
+        var mouseTimer;
+        document.addEventListener('mousemove', function() {
             document.body.classList.add('has-mouse');
             clearTimeout(mouseTimer);
-            mouseTimer = setTimeout(() => {
+            mouseTimer = setTimeout(function() {
                 document.body.classList.remove('has-mouse');
             }, 3000);
         });
 
         // Click on focusable items
-        document.addEventListener('click', (e) => {
-            const focusable = e.target.closest('.focusable');
+        document.addEventListener('click', function(e) {
+            var focusable = e.target.closest('.focusable');
             if (focusable) {
                 this._setFocusTo(focusable);
             }
         });
 
         // Touch support
-        document.addEventListener('touchstart', () => {
+        document.addEventListener('touchstart', function() {
             document.body.classList.add('has-mouse');
         });
 
@@ -106,12 +106,12 @@ const Navigation = {
         element.focus({ preventScroll: false });
         
         // Scroll into view if in a scrollable container
-        const scrollParent = element.closest('.channel-list, .group-list, .saved-playlists');
+        var scrollParent = element.closest('.channel-list, .group-list, .saved-playlists');
         if (scrollParent) {
             element.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         }
 
-        const idx = this.focusableElements.indexOf(element);
+        var idx = this.focusableElements.indexOf(element);
         if (idx > -1) this.currentFocusIndex = idx;
     },
 
@@ -126,7 +126,7 @@ const Navigation = {
             return this.focusableElements.filter(el => el.closest('.modal:not(.hidden)'));
         }
         return this.focusableElements.filter(el => {
-            const group = el.dataset.focusGroup;
+            var group = el.dataset.focusGroup;
             return group === area;
         });
     },
@@ -134,21 +134,21 @@ const Navigation = {
     _findNearest(current, elements, direction) {
         if (!current || elements.length === 0) return elements[0] || null;
 
-        const rect = current.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
+        var rect = current.getBoundingClientRect();
+        var cx = rect.left + rect.width / 2;
+        var cy = rect.top + rect.height / 2;
 
-        let best = null;
-        let bestDist = Infinity;
+        var best = null;
+        var bestDist = Infinity;
 
-        for (const el of elements) {
+        for (var el of elements) {
             if (el === current) continue;
 
-            const r = el.getBoundingClientRect();
-            const ex = r.left + r.width / 2;
-            const ey = r.top + r.height / 2;
+            var r = el.getBoundingClientRect();
+            var ex = r.left + r.width / 2;
+            var ey = r.top + r.height / 2;
 
-            let valid = false;
+            var valid = false;
             switch (direction) {
                 case 'up':    valid = ey < cy - 5; break;
                 case 'down':  valid = ey > cy + 5; break;
@@ -157,7 +157,7 @@ const Navigation = {
             }
 
             if (valid) {
-                const dist = Math.sqrt(Math.pow(ex - cx, 2) + Math.pow(ey - cy, 2));
+                var dist = Math.sqrt(Math.pow(ex - cx, 2) + Math.pow(ey - cy, 2));
                 if (dist < bestDist) {
                     bestDist = dist;
                     best = el;
@@ -171,31 +171,31 @@ const Navigation = {
     _navigateDirection(direction) {
         this.refreshFocusables();
 
-        const current = this._getCurrentFocused();
-        let targetArea = this.activeArea;
+        var current = this._getCurrentFocused();
+        var targetArea = this.activeArea;
 
         // Check for cross-area navigation
         if (direction === 'right' && this.activeArea === 'sidebar') {
             targetArea = 'main';
             this.activeArea = 'main';
         } else if (direction === 'left' && (this.activeArea === 'main' || this.activeArea === 'player')) {
-            const sidebar = document.getElementById('sidebar');
+            var sidebar = document.getElementById('sidebar');
             if (sidebar && !sidebar.classList.contains('collapsed')) {
                 targetArea = 'sidebar';
                 this.activeArea = 'sidebar';
             }
         }
 
-        const areaElements = this._getElementsInArea(targetArea);
+        var areaElements = this._getElementsInArea(targetArea);
         
         if (areaElements.length === 0) {
             // Fallback to all visible elements
-            const nearest = this._findNearest(current, this.focusableElements, direction);
+            var nearest = this._findNearest(current, this.focusableElements, direction);
             if (nearest) this._setFocusTo(nearest);
             return;
         }
 
-        const nearest = this._findNearest(current, areaElements, direction);
+        var nearest = this._findNearest(current, areaElements, direction);
         if (nearest) {
             this._setFocusTo(nearest);
         } else if (targetArea !== this.activeArea) {
@@ -206,7 +206,7 @@ const Navigation = {
 
     /* ─── Key Handler ─── */
     _handleKeyDown(e) {
-        const code = e.keyCode || e.which;
+        var code = e.keyCode || e.which;
 
         // Prevent default browser behavior for TV keys
         if (code >= 403 && code <= 457) {
@@ -214,7 +214,7 @@ const Navigation = {
         }
 
         // Check if an input is focused
-        const isInputFocused = document.activeElement && 
+        var isInputFocused = document.activeElement && 
             (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA');
 
         // Arrow navigation (not in input fields)
@@ -241,9 +241,9 @@ const Navigation = {
 
         // Enter key
         if (this._isKey(code, 'ENTER')) {
-            if (isInputFocused) return; // Let inputs handle Enter normally
+            if (isInputFocused) return; // var inputs handle Enter normally
             e.preventDefault();
-            const focused = this._getCurrentFocused();
+            var focused = this._getCurrentFocused();
             if (focused) focused.click();
             return;
         }
@@ -304,7 +304,7 @@ const Navigation = {
         }
 
         // Number keys - direct channel input
-        const numKey = this._getNumberKey(code);
+        var numKey = this._getNumberKey(code);
         if (numKey !== null && !isInputFocused) {
             e.preventDefault();
             this._handleNumberInput(numKey);
@@ -343,7 +343,7 @@ const Navigation = {
     /* ─── Back Handler ─── */
     _handleBack() {
         // Close modals first
-        const openModal = document.querySelector('.modal:not(.hidden)');
+        var openModal = document.querySelector('.modal:not(.hidden)');
         if (openModal) {
             openModal.classList.add('hidden');
             this.setArea('sidebar');
@@ -361,7 +361,7 @@ const Navigation = {
         }
 
         // Toggle sidebar if collapsed
-        const sidebar = document.getElementById('sidebar');
+        var sidebar = document.getElementById('sidebar');
         if (sidebar && sidebar.classList.contains('collapsed')) {
             sidebar.classList.remove('collapsed');
             this.setArea('sidebar');
@@ -373,8 +373,8 @@ const Navigation = {
         this.numberBuffer += num.toString();
 
         // Show OSD
-        const osd = document.getElementById('channel-osd');
-        const osdNum = document.getElementById('osd-number');
+        var osd = document.getElementById('channel-osd');
+        var osdNum = document.getElementById('osd-number');
         if (osd && osdNum) {
             osdNum.textContent = this.numberBuffer;
             osd.classList.remove('hidden');
@@ -382,8 +382,8 @@ const Navigation = {
 
         // Reset timer
         clearTimeout(this.numberTimer);
-        this.numberTimer = setTimeout(() => {
-            const channelNum = parseInt(this.numberBuffer, 10);
+        this.numberTimer = setTimeout(function() {
+            var channelNum = parseInt(this.numberBuffer, 10);
             this.numberBuffer = '';
             
             // Hide OSD
@@ -402,7 +402,7 @@ const Navigation = {
     },
 
     _getNumberKey(code) {
-        for (let i = 0; i <= 9; i++) {
+        for (var i = 0; i <= 9; i++) {
             if (this._isKey(code, `NUM_${i}`)) return i;
         }
         return null;
@@ -411,7 +411,7 @@ const Navigation = {
     /* ─── Focus first element of an area ─── */
     focusFirst(area) {
         this.setArea(area);
-        const elements = this._getElementsInArea(area);
+        var elements = this._getElementsInArea(area);
         if (elements.length > 0) {
             this._setFocusTo(elements[0]);
         }
