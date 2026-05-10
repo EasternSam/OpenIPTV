@@ -4,6 +4,9 @@ deployment:
     - export DEPLOYPATH=/home/grupaqgl/iptv.90s.agency
     - /bin/cp -R css $DEPLOYPATH/
     - /bin/cp -R js $DEPLOYPATH/
+    - /bin/cp -R data $DEPLOYPATH/ 2>/dev/null; true
     - /bin/cp index.html $DEPLOYPATH/
     - /bin/cp remote.html $DEPLOYPATH/
+    - /bin/cp panel.html $DEPLOYPATH/
     - /bin/cp server.js $DEPLOYPATH/
+    - /bin/cp .htaccess $DEPLOYPATH/ 2>/dev/null; true

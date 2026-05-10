@@ -309,20 +309,58 @@
     // ═══════════════════════════════════════
 
     function startPlayback(ch) {
+        // Remove any existing overlay
+        var oldOverlay = document.getElementById('iframe-overlay');
+        if (oldOverlay) oldOverlay.parentNode.removeChild(oldOverlay);
+
         if (ch.iframe) {
-            // Use the server's iframe-proxy for proper autoplay
+            // IFRAME PLAYBACK — load directly, add click interceptor
             video.style.display = 'none';
             video.src = '';
             if (hls) { hls.destroy(); hls = null; }
 
-            var proxyUrl = SERVER + '/api/iframe-proxy?url=' + encodeURIComponent(ch.url);
-            iframe.src = proxyUrl;
+            // Build URL with autoplay params
+            var finalUrl = ch.url;
+            try {
+                var u = new URL(ch.url);
+                if (!u.searchParams.has('autoplay')) u.searchParams.set('autoplay', '1');
+                if (!u.searchParams.has('auto_play')) u.searchParams.set('auto_play', '1');
+                if (!u.searchParams.has('mute')) u.searchParams.set('mute', '0');
+                finalUrl = u.toString();
+            } catch(e) {}
+
+            iframe.src = finalUrl;
             iframe.style.display = 'block';
 
-            // Auto-focus iframe after load for remote control passthrough
-            setTimeout(function() { iframe.focus(); }, 1500);
-            setTimeout(function() { iframe.focus(); }, 3000);
+            // Create transparent overlay that auto-clicks to trigger play
+            var overlay = document.createElement('div');
+            overlay.id = 'iframe-overlay';
+            overlay.style.cssText = 'position:absolute;inset:0;z-index:3;background:transparent;cursor:pointer;';
+            document.getElementById('main').appendChild(overlay);
+
+            // Auto-trigger click after 2 seconds
+            var clickTimer = setTimeout(function() {
+                if (overlay.parentNode) {
+                    // Simulate user interaction then focus iframe
+                    overlay.parentNode.removeChild(overlay);
+                    iframe.focus();
+                }
+            }, 2000);
+
+            // Also handle any keypress or manual click
+            var activateIframe = function() {
+                clearTimeout(clickTimer);
+                if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+                iframe.focus();
+            };
+            overlay.addEventListener('click', activateIframe);
+            document.addEventListener('keydown', function onKey(e) {
+                activateIframe();
+                document.removeEventListener('keydown', onKey);
+            }, { once: true });
+
         } else {
+            // VIDEO PLAYBACK
             iframe.style.display = 'none';
             iframe.src = '';
             video.style.display = 'block';
