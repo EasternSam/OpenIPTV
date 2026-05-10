@@ -28,7 +28,7 @@ const Remote = {
         this._bindSettingsTab();
         this._bindKeyboard();
 
-        const saved = sessionStorage.getItem('openiptv_remote_code');
+        const saved = localStorage.getItem('openiptv_remote_code');
         if (saved) this._tryReconnect(saved);
     },
 
@@ -116,14 +116,14 @@ const Remote = {
 
             this.code = code;
             this.connected = true;
-            sessionStorage.setItem('openiptv_remote_code', code);
+            localStorage.setItem('openiptv_remote_code', code);
 
             document.getElementById('screen-pair').classList.remove('active');
             document.getElementById('screen-remote').classList.add('active');
 
             this._startStatePolling();
             this._vibrate(100);
-        } catch {
+        } catch(e) {
             err.textContent = '❌ Error de conexión';
             btn.disabled = false;
             btn.textContent = 'Conectar';
@@ -146,9 +146,9 @@ const Remote = {
                 document.getElementById('screen-remote').classList.add('active');
                 this._startStatePolling();
             } else {
-                sessionStorage.removeItem('openiptv_remote_code');
+                localStorage.removeItem('openiptv_remote_code');
             }
-        } catch { sessionStorage.removeItem('openiptv_remote_code'); }
+        } catch(e) { localStorage.removeItem('openiptv_remote_code'); }
     },
 
     /* ═══════════════════════════════
@@ -216,14 +216,14 @@ const Remote = {
                 body: JSON.stringify({ code: this.code, command, data }),
             });
             if (r.status === 404) this._handleTVDisconnect();
-        } catch {}
+        } catch(e) {}
     },
 
     _disconnect() {
         this.connected = false;
         this.code = null;
         this.channels = [];
-        sessionStorage.removeItem('openiptv_remote_code');
+        localStorage.removeItem('openiptv_remote_code');
         clearInterval(this.stateInterval);
 
         document.getElementById('screen-remote').classList.remove('active');
@@ -506,7 +506,7 @@ const Remote = {
                 const state = await r.json();
                 this._updateFromState(state);
             }
-        } catch {}
+        } catch(e) {}
     },
 
     _updateFromState(state) {

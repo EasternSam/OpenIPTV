@@ -173,7 +173,7 @@ const Player = {
             if (!u.searchParams.has('muted')) u.searchParams.set('muted', '0');
             if (!u.searchParams.has('auto_play')) u.searchParams.set('auto_play', '1');
             autoUrl = u.toString();
-        } catch { /* URL parsing failed, use original */ }
+        } catch(e) { /* URL parsing failed, use original */ }
 
         this.iframe.src = autoUrl;
         this.isPlaying = true;
@@ -221,7 +221,7 @@ const Player = {
                             video.play().catch(() => {});
                         }
                     }
-                } catch {
+                } catch(e) {
                     // Cross-origin: can't access iframe content
                     // Simulate a mouse click on the iframe element itself
                     // This triggers the iframe to receive a user gesture
@@ -324,10 +324,10 @@ const Player = {
             // ── ENTER fullscreen ──
             // Strategy 1: video.webkitEnterFullscreen (Samsung Tizen / iOS)
             if (video && video.webkitEnterFullscreen) {
-                try { video.webkitEnterFullscreen(); return; } catch {}
+                try { video.webkitEnterFullscreen(); return; } catch(e) {}
             }
             if (video && video.webkitEnterFullScreen) {
-                try { video.webkitEnterFullScreen(); return; } catch {}
+                try { video.webkitEnterFullScreen(); return; } catch(e) {}
             }
 
             // Strategy 2: Native Fullscreen API (needs trusted gesture)

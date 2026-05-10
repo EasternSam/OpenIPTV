@@ -176,7 +176,7 @@ const M3UParser = {
                 return true;
             }
             return false;
-        } catch {
+        } catch(e) {
             return false;
         }
     },

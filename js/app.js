@@ -369,7 +369,7 @@ const App = {
         try {
             const u = new URL(url);
             return u.hostname.replace('www.', '');
-        } catch { return 'Playlist'; }
+        } catch(e) { return 'Playlist'; }
     },
 
     async _loadFromFile(file) {

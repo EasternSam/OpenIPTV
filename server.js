@@ -79,7 +79,7 @@ setInterval(() => {
     const now = Date.now();
     for (const [code, session] of tvSessions) {
         if (now - session.createdAt > 12 * 60 * 60 * 1000) {
-            try { if (session.res && !session.res.writableEnded) session.res.end(); } catch {}
+            try { if (session.res && !session.res.writableEnded) session.res.end(); } catch(e) {}
             tvSessions.delete(code);
         }
     }
@@ -88,7 +88,7 @@ setInterval(() => {
 // ─── Data helpers ───
 function readData() {
     try { return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); }
-    catch { return { playlists: [], lastPlaylist: null, favorites: [] }; }
+    catch(e) { return { playlists: [], lastPlaylist: null, favorites: [] }; }
 }
 
 function writeData(data) {
@@ -101,7 +101,7 @@ function parseBody(req) {
         req.on('data', chunk => { body += chunk.toString(); });
         req.on('end', () => {
             try { resolve(body ? JSON.parse(body) : {}); }
-            catch { reject(new Error('Invalid JSON')); }
+            catch(e) { reject(new Error('Invalid JSON')); }
         });
         req.on('error', reject);
     });
@@ -141,7 +141,9 @@ function serveStatic(req, res) {
         }
         res.writeHead(200, {
             'Content-Type': contentType,
-            'Cache-Control': 'no-cache',
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+            'Pragma': 'no-cache',
+            'Expires': '0',
             'Access-Control-Allow-Origin': '*',
         });
         res.end(content);
@@ -198,7 +200,7 @@ const server = http.createServer(async (req, res) => {
         
         // Close old SSE response if any
         if (existing && existing.res && !existing.res.writableEnded) {
-            try { existing.res.end(); } catch {}
+            try { existing.res.end(); } catch(e) {}
         }
 
         // Set up SSE response
@@ -241,7 +243,7 @@ const server = http.createServer(async (req, res) => {
         // Keepalive every 15s
         const keepalive = setInterval(() => {
             if (res.writableEnded) { clearInterval(keepalive); return; }
-            try { res.write(`:keepalive\n\n`); } catch { clearInterval(keepalive); }
+            try { res.write(`:keepalive\n\n`); } catch(e) { clearInterval(keepalive); }
         }, 15000);
 
         return;
@@ -315,7 +317,7 @@ const server = http.createServer(async (req, res) => {
             const session = tvSessions.get(body.code);
             if (session) session.tvState = body.state;
             sendJSON(res, 200, { success: true });
-        } catch { sendJSON(res, 500, { error: 'Failed' }); }
+        } catch(e) { sendJSON(res, 500, { error: 'Failed' }); }
         return;
     }
 

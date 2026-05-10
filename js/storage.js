@@ -127,7 +127,7 @@ const Storage = {
         try {
             const data = localStorage.getItem(key);
             return data ? JSON.parse(data) : fallback;
-        } catch {
+        } catch(e) {
             return fallback;
         }
     },
@@ -145,7 +145,7 @@ const Storage = {
     _remove(key) {
         try {
             localStorage.removeItem(key);
-        } catch {}
+        } catch(e) {}
     },
 
     /* ─── Favorites (now synced with server) ─── */
@@ -238,7 +238,7 @@ const Storage = {
             const urlObj = new URL(url);
             const path = urlObj.pathname.split('/').pop();
             return path ? path.replace(/\.(m3u8?|txt)$/i, '') : urlObj.hostname;
-        } catch {
+        } catch(e) {
             return 'Playlist';
         }
     },

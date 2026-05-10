@@ -404,7 +404,7 @@ const RemoteReceiver = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ code: this.code, state }),
             });
-        } catch {}
+        } catch(e) {}
     },
 
     /* ─── Pairing Overlay ─── */
