@@ -30,7 +30,7 @@ var App = {
 
         // Start clock
         this._updateClock();
-        setInterval(function() this._updateClock(), 1000);
+        setInterval(() => this._updateClock(), 1000);
 
         // Load splash → app
         this._startSplash();
@@ -110,15 +110,15 @@ var App = {
 
     _bindEvents() {
         // ─── Load Playlist Buttons ───
-        document.getElementById('btn-load-url')?.addEventListener('click', function() {
+        document.getElementById('btn-load-url')?.addEventListener('click', () => {
             this._showModal('modal-url');
         });
 
-        document.getElementById('btn-load-file')?.addEventListener('click', function() {
+        document.getElementById('btn-load-file')?.addEventListener('click', () => {
             document.getElementById('file-input')?.click();
         });
 
-        document.getElementById('file-input')?.addEventListener('change', async function(e) {
+        document.getElementById('file-input')?.addEventListener('change', async (e) => {
             if (e.target.files.length > 0) {
                 for (var i = 0; i < e.target.files.length; i++) {
                     await this._loadFromFile(e.target.files[i]);
@@ -128,7 +128,7 @@ var App = {
         });
 
         // ─── URL Modal ───
-        document.getElementById('btn-load-playlist')?.addEventListener('click', function() {
+        document.getElementById('btn-load-playlist')?.addEventListener('click', () => {
             var input = document.getElementById('playlist-url-input');
             if (input && input.value.trim()) {
                 this.loadPlaylistFromUrl(input.value.trim());
@@ -136,7 +136,7 @@ var App = {
             }
         });
 
-        document.getElementById('modal-url-close')?.addEventListener('click', function() {
+        document.getElementById('modal-url-close')?.addEventListener('click', () => {
             this._hideModal('modal-url');
         });
 
@@ -147,42 +147,42 @@ var App = {
         });
 
         // ─── Remote Pairing ───
-        document.getElementById('btn-remote-pair')?.addEventListener('click', function() {
+        document.getElementById('btn-remote-pair')?.addEventListener('click', () => {
             RemoteReceiver.startPairing();
         });
 
-        document.getElementById('pair-overlay-close')?.addEventListener('click', function() {
+        document.getElementById('pair-overlay-close')?.addEventListener('click', () => {
             RemoteReceiver.hidePairOverlay();
         });
 
         // ─── Settings ───
-        document.getElementById('btn-settings')?.addEventListener('click', function() {
+        document.getElementById('btn-settings')?.addEventListener('click', () => {
             this._showModal('modal-settings');
             this._loadSettingsUI();
         });
 
-        document.getElementById('modal-settings-close')?.addEventListener('click', function() {
+        document.getElementById('modal-settings-close')?.addEventListener('click', () => {
             this._hideModal('modal-settings');
         });
 
         // Settings changes
         ['setting-buffer', 'setting-reconnect', 'setting-retries', 'setting-hide-controls', 'setting-clock'].forEach(id => {
-            document.getElementById(id)?.addEventListener('change', function() this._saveSettingsFromUI());
+            document.getElementById(id)?.addEventListener('change', () => this._saveSettingsFromUI());
         });
 
-        document.getElementById('btn-clear-favorites')?.addEventListener('click', function() {
+        document.getElementById('btn-clear-favorites')?.addEventListener('click', () => {
             Storage.clearFavorites();
             this._renderChannels();
             this._toast('Favoritos borrados');
         });
 
-        document.getElementById('btn-clear-recents')?.addEventListener('click', function() {
+        document.getElementById('btn-clear-recents')?.addEventListener('click', () => {
             Storage.clearRecents();
             this._renderChannels();
             this._toast('Recientes borrados');
         });
 
-        document.getElementById('btn-clear-all')?.addEventListener('click', function() {
+        document.getElementById('btn-clear-all')?.addEventListener('click', () => {
             Storage.clearAll();
             this.channels = [];
             this.filteredChannels = [];
@@ -203,18 +203,18 @@ var App = {
         });
 
         // ─── Player Controls ───
-        document.getElementById('btn-play-pause')?.addEventListener('click', function() Player.togglePause());
-        document.getElementById('btn-stop')?.addEventListener('click', function() {
+        document.getElementById('btn-play-pause')?.addEventListener('click', () => Player.togglePause());
+        document.getElementById('btn-stop')?.addEventListener('click', () => {
             Player.stop();
             this._showVideoContainer(false);
         });
-        document.getElementById('btn-prev-channel')?.addEventListener('click', function() this.prevChannel());
-        document.getElementById('btn-next-channel')?.addEventListener('click', function() this.nextChannel());
-        document.getElementById('btn-fullscreen')?.addEventListener('click', function() Player.toggleFullscreen());
-        document.getElementById('btn-mute')?.addEventListener('click', function() Player.toggleMute());
-        document.getElementById('btn-retry')?.addEventListener('click', function() Player.retry());
+        document.getElementById('btn-prev-channel')?.addEventListener('click', () => this.prevChannel());
+        document.getElementById('btn-next-channel')?.addEventListener('click', () => this.nextChannel());
+        document.getElementById('btn-fullscreen')?.addEventListener('click', () => Player.toggleFullscreen());
+        document.getElementById('btn-mute')?.addEventListener('click', () => Player.toggleMute());
+        document.getElementById('btn-retry')?.addEventListener('click', () => Player.retry());
 
-        document.getElementById('btn-favorite')?.addEventListener('click', function() {
+        document.getElementById('btn-favorite')?.addEventListener('click', () => {
             if (Player.currentChannel) {
                 var added = Storage.toggleFavorite(Player.currentChannel.url);
                 this._updateFavoriteIcon(added);
@@ -223,7 +223,7 @@ var App = {
             }
         });
 
-        document.getElementById('btn-toggle-sidebar')?.addEventListener('click', function() {
+        document.getElementById('btn-toggle-sidebar')?.addEventListener('click', () => {
             this._toggleSidebar();
         });
 
@@ -240,12 +240,12 @@ var App = {
         });
 
         // ─── Search ───
-        document.getElementById('search-input')?.addEventListener('input', function(e) {
+        document.getElementById('search-input')?.addEventListener('input', (e) => {
             this._filterChannels(e.target.value);
         });
 
         // ─── Playlist Filter ───
-        document.getElementById('playlist-filter')?.addEventListener('change', function(e) {
+        document.getElementById('playlist-filter')?.addEventListener('change', (e) => {
             this.currentPlaylist = e.target.value;
             this.currentGroup = null; // Reset group selection when playlist changes
             this._renderGroups();
@@ -254,7 +254,7 @@ var App = {
 
         // ─── Category Tabs ───
         document.querySelectorAll('.category-tab').forEach(tab => {
-            tab.addEventListener('click', function() {
+            tab.addEventListener('click', () => {
                 this._setCategory(tab.dataset.category);
             });
         });
@@ -518,7 +518,7 @@ var App = {
                 <span class="ch-fav">⭐</span>
             `;
 
-            item.addEventListener('click', function() this.playChannel(channel));
+            item.addEventListener('click', () => this.playChannel(channel));
             fragment.appendChild(item);
         });
 
@@ -578,7 +578,7 @@ var App = {
                 btn.classList.add('active');
             }
 
-            btn.addEventListener('click', function() {
+            btn.addEventListener('click', () => {
                 if (this.currentGroup === group) {
                     this.currentGroup = null;
                     btn.classList.remove('active');
@@ -628,7 +628,7 @@ var App = {
                 <button class="saved-playlist-delete" title="Eliminar">×</button>
             `;
 
-            item.addEventListener('click', function(e) {
+            item.addEventListener('click', (e) => {
                 if (e.target.closest('.saved-playlist-delete')) {
                     this._removeLoadedPlaylist(pl.url);
                     return;
@@ -642,7 +642,7 @@ var App = {
                     this._toast(`Lista "${pl.name}" desactivada`);
                 } else {
                     this._toast('⏳ Cargando...');
-                    this._addPlaylist(pl.url, pl.name, false).then(function() {
+                    this._addPlaylist(pl.url, pl.name, false).then(() => {
                         this._mergeAllPlaylists();
                         this._renderSavedPlaylists();
                         this._toast(`✅ "${pl.name}" añadida (${this.channels.length} canales total)`);
@@ -882,7 +882,7 @@ var App = {
         clearTimeout(this._toastTimer);
         this._toastTimer = setTimeout(function() {
             toast.classList.remove('show');
-            setTimeout(function() toast.classList.add('hidden'), 300);
+            setTimeout(() => toast.classList.add('hidden'), 300);
         }, 3000);
     },
 
