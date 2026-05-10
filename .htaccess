@@ -1,4 +1,5 @@
 RewriteEngine On
 
-# Redirigir /remote a /remote.html
+# Redirigir rutas limpias a archivos HTML
 RewriteRule ^remote$ /remote.html [L]
+RewriteRule ^panel$ /panel.html [L]
