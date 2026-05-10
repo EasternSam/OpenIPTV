@@ -134,6 +134,37 @@ if ($action === 'favorites' && $method === 'DELETE') {
     exit;
 }
 
+// GET /api.php?action=proxy&url=... → fetch external M3U to bypass CORS
+if ($action === 'proxy' && $method === 'GET') {
+    $targetUrl = isset($_GET['url']) ? $_GET['url'] : '';
+    if (empty($targetUrl)) {
+        http_response_code(400);
+        echo "Missing URL";
+        exit;
+    }
+
+    $ch = curl_init($targetUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36');
+    
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    
+    if (curl_errno($ch)) {
+        http_response_code(500);
+        echo "Curl error: " . curl_error($ch);
+    } else {
+        http_response_code($httpCode >= 200 && $httpCode < 400 ? 200 : $httpCode);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo $response;
+    }
+    curl_close($ch);
+    exit;
+}
+
 // POST /api.php?action=upload → upload M3U file
 if ($action === 'upload' && $method === 'POST') {
     $uploadDir = __DIR__ . '/uploads';

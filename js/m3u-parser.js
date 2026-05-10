@@ -188,8 +188,9 @@ const M3UParser = {
      */
     async fetchAndParse(url) {
         try {
-            // Use a CORS proxy if needed
+            // Use local PHP proxy first, then fallbacks if needed
             const proxies = [
+                '/api/proxy?url=',
                 '', // Direct
                 'https://api.allorigins.win/raw?url=',
                 'https://corsproxy.io/?',
