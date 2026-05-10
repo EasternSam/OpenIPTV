@@ -546,6 +546,42 @@ const Remote = {
         if (favBtn && state.channelUrl) {
             favBtn.classList.toggle('is-fav', this.favorites.includes(state.channelUrl));
         }
+
+        // Signal quality
+        this._updateSignalUI(state.signalQuality || 'none', state.playing);
+    },
+
+    _updateSignalUI(quality, isPlaying) {
+        // Header signal bars
+        const signal = document.getElementById('r-signal');
+        if (signal) {
+            signal.className = 'r-signal';
+            if (isPlaying) signal.classList.add(`signal-${quality}`);
+        }
+
+        // Now-playing badge
+        const badge = document.getElementById('r-np-signal-badge');
+        const dot = badge?.querySelector('.r-np-signal-dot');
+        const text = document.getElementById('r-np-signal-text');
+        if (badge) {
+            badge.className = 'r-np-signal-badge';
+            if (!isPlaying) {
+                if (text) text.textContent = 'Sin señal';
+                badge.classList.add('signal-none');
+            } else if (quality === 'good') {
+                if (text) text.textContent = 'Excelente';
+                badge.classList.add('signal-good');
+            } else if (quality === 'medium') {
+                if (text) text.textContent = 'Regular';
+                badge.classList.add('signal-medium');
+            } else if (quality === 'poor') {
+                if (text) text.textContent = 'Débil';
+                badge.classList.add('signal-poor');
+            } else {
+                if (text) text.textContent = 'Conectando...';
+                badge.classList.add('signal-none');
+            }
+        }
     },
 
     /* ═══════════════════════════════

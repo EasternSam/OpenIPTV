@@ -60,6 +60,12 @@
                     <span class="r-np-name" id="r-channel-name">—</span>
                 </div>
             </div>
+            <div class="r-signal" id="r-signal" title="Calidad de señal">
+                <div class="r-signal-bar"></div>
+                <div class="r-signal-bar"></div>
+                <div class="r-signal-bar"></div>
+                <div class="r-signal-bar"></div>
+            </div>
             <button id="btn-disconnect" class="r-disconnect" title="Desconectar">✕</button>
         </header>
 
@@ -107,11 +113,10 @@
                             <span class="r-np-card-name" id="r-np-card-name">Ningún canal</span>
                             <span class="r-np-card-group" id="r-np-card-group"></span>
                         </div>
-                        <button class="r-np-fav-btn" id="r-np-fav-btn" data-cmd="favorite" title="Favorito">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/>
-                            </svg>
-                        </button>
+                        <div class="r-np-signal-badge" id="r-np-signal-badge">
+                            <span class="r-np-signal-dot"></span>
+                            <span class="r-np-signal-text" id="r-np-signal-text">Sin señal</span>
+                        </div>
                     </div>
                     <!-- Volume Slider -->
                     <div class="r-volume-wrap">

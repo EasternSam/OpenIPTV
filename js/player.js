@@ -11,6 +11,7 @@ const Player = {
     currentChannel: null,
     isPlaying: false,
     isMuted: false,
+    signalQuality: 'none', // 'none' | 'good' | 'medium' | 'poor'
     retryCount: 0,
     retryTimer: null,
     controlsTimer: null,
@@ -520,6 +521,7 @@ const Player = {
     },
 
     _updateSignalQuality(level) {
+        this.signalQuality = level;
         const el = document.getElementById('signal-quality');
         if (el) {
             el.className = 'signal-quality';

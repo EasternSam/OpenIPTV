@@ -37,6 +37,31 @@ body,html{touch-action:pan-x pan-y;overscroll-behavior:none}
 .r-np-name{font-size:13px;font-weight:600;color:var(--accent2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:180px}
 .r-disconnect{width:30px;height:30px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.25);border-radius:50%;color:var(--err);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 
+/* ═══ SIGNAL QUALITY (Header) ═══ */
+.r-signal{display:flex;align-items:flex-end;gap:2px;height:16px;padding:0 4px}
+.r-signal-bar{width:3px;background:var(--txt3);border-radius:1px;transition:background .3s,height .3s}
+.r-signal-bar:nth-child(1){height:4px}
+.r-signal-bar:nth-child(2){height:7px}
+.r-signal-bar:nth-child(3){height:11px}
+.r-signal-bar:nth-child(4){height:16px}
+.r-signal.signal-good .r-signal-bar{background:var(--ok)}
+.r-signal.signal-medium .r-signal-bar{background:#f59e0b}
+.r-signal.signal-medium .r-signal-bar:nth-child(4){background:var(--txt3)}
+.r-signal.signal-poor .r-signal-bar{background:var(--err)}
+.r-signal.signal-poor .r-signal-bar:nth-child(3),.r-signal.signal-poor .r-signal-bar:nth-child(4){background:var(--txt3)}
+
+/* ═══ SIGNAL BADGE (Now Playing Card) ═══ */
+.r-np-signal-badge{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:100px;font-size:11px;font-weight:600;background:var(--bg3);flex-shrink:0}
+.r-np-signal-dot{width:7px;height:7px;border-radius:50%;background:var(--txt3);flex-shrink:0}
+.r-np-signal-badge.signal-good .r-np-signal-dot{background:var(--ok);box-shadow:0 0 6px rgba(34,197,94,0.5)}
+.r-np-signal-badge.signal-good{color:var(--ok);background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.15)}
+.r-np-signal-badge.signal-medium .r-np-signal-dot{background:#f59e0b;box-shadow:0 0 6px rgba(245,158,11,0.4)}
+.r-np-signal-badge.signal-medium{color:#f59e0b;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.15)}
+.r-np-signal-badge.signal-poor .r-np-signal-dot{background:var(--err);box-shadow:0 0 6px rgba(239,68,68,0.5);animation:pulse-dot 1s infinite}
+.r-np-signal-badge.signal-poor{color:var(--err);background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.15)}
+.r-np-signal-badge.signal-none{color:var(--txt3)}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
+
 /* ═══ BOTTOM NAV ═══ */
 .r-bottom-nav{display:flex;background:var(--bg2);border-top:1px solid rgba(99,102,241,0.1);flex-shrink:0;padding-bottom:env(safe-area-inset-bottom,0)}
 .r-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px 6px;background:none;border:none;color:var(--txt3);font-size:10px;font-weight:600;font-family:inherit;cursor:pointer;transition:color .15s}
