@@ -94,6 +94,15 @@ var Navigation = {
         this.refreshFocusables();
     },
 
+    /* ─── Focus area first element ─── */
+    focusFirst(area) {
+        this.setArea(area);
+        var elements = this._getElementsInArea(area);
+        if (elements.length > 0) {
+            this._setFocusTo(elements[0]);
+        }
+    },
+
     /* ─── Focus helpers ─── */
     _setFocusTo(element) {
         if (!element) return;
