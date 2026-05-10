@@ -192,54 +192,42 @@ const Player = {
         var container = document.getElementById('video-container');
         if (!container) return;
 
+        // Invisible overlay — captures the next interaction seamlessly
         var overlay = document.createElement('div');
         overlay.id = 'iframe-click-overlay';
-        overlay.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:50;cursor:pointer;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);';
-        overlay.innerHTML = '<div style="text-align:center;color:white;font-family:Inter,sans-serif;"><div style="font-size:48px;margin-bottom:12px;">▶</div><div style="font-size:16px;opacity:0.8;">Presiona OK para reproducir</div></div>';
+        overlay.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:50;cursor:pointer;background:transparent;';
+        overlay.setAttribute('tabindex', '0');
         container.appendChild(overlay);
 
-        // Handle click/touch on overlay
         var self = this;
-        var handleActivate = function(e) {
-            e.preventDefault();
-            e.stopPropagation();
+        var cleaned = false;
+
+        var activate = function() {
+            if (cleaned) return;
+            cleaned = true;
             self._removeIframeOverlay();
-            // Focus iframe and dispatch a click at its center
+            document.removeEventListener('keydown', keyHandler, true);
+            // Focus iframe so the remote's next presses go to the embedded player
             if (self.iframe) {
                 self.iframe.focus();
-                // Dispatch a click event at center of iframe
-                var rect = self.iframe.getBoundingClientRect();
-                var clickX = rect.left + rect.width / 2;
-                var clickY = rect.top + rect.height / 2;
-                
-                var clickEvent = new MouseEvent('click', {
-                    bubbles: true,
-                    cancelable: true,
-                    clientX: clickX,
-                    clientY: clickY,
-                    view: window
-                });
-                self.iframe.dispatchEvent(clickEvent);
             }
         };
 
-        overlay.addEventListener('click', handleActivate);
-        overlay.addEventListener('touchend', handleActivate);
+        // Any click/touch on the overlay area
+        overlay.addEventListener('click', activate);
+        overlay.addEventListener('touchend', activate);
 
-        // Also listen for keyboard Enter/OK (Samsung remote)
+        // ANY keypress on the remote triggers it (not just OK)
         var keyHandler = function(e) {
-            if (e.keyCode === 13 || e.keyCode === 10009 || e.keyCode === 32) {
-                handleActivate(e);
-                document.removeEventListener('keydown', keyHandler, true);
-            }
+            activate();
         };
         document.addEventListener('keydown', keyHandler, true);
 
-        // Auto-remove after 15s if not interacted
+        // Auto-activate after 2 seconds — if the user hasn't pressed anything,
+        // focus the iframe anyway so the embedded player can receive events
         setTimeout(function() {
-            self._removeIframeOverlay();
-            document.removeEventListener('keydown', keyHandler, true);
-        }, 15000);
+            activate();
+        }, 2000);
     },
 
     _removeIframeOverlay() {
