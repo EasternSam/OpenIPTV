@@ -72,6 +72,14 @@ const Player = {
             }
         }
 
+        // Auto-convert Xtream Codes TS streams to HLS for web compatibility
+        // Match: http(s)://domain:port/username/password/channel_id
+        const xtreamRegex = /^(https?:\/\/[^\/]+)\/([^\/]+)\/([^\/]+)\/([0-9]+)$/i;
+        if (xtreamRegex.test(url)) {
+            url = url.replace(xtreamRegex, '$1/live/$2/$3/$4.m3u8');
+            console.log('[Player] Converted Xtream TS to HLS:', url);
+        }
+
         // Determine stream type
         if (isIframe) {
             this._playIframe(url);
