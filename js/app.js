@@ -300,6 +300,11 @@ var App = {
             }
 
             setTimeout(function() {
+                var sidebar = document.getElementById('sidebar');
+                if (sidebar && sidebar.classList.contains('collapsed')) {
+                    sidebar.classList.remove('collapsed');
+                    sidebar.classList.add('sidebar-show');
+                }
                 Navigation.setArea('sidebar');
                 var firstChannel = document.querySelector('.channel-item');
                 if (firstChannel) Navigation._setFocusTo(firstChannel);
@@ -390,6 +395,11 @@ var App = {
             this._toast(`✅ ${result.channels.length} canales de "${file.name}" añadidos (${this.channels.length} total)`);
 
             setTimeout(function() {
+                var sidebar = document.getElementById('sidebar');
+                if (sidebar && sidebar.classList.contains('collapsed')) {
+                    sidebar.classList.remove('collapsed');
+                    sidebar.classList.add('sidebar-show');
+                }
                 Navigation.setArea('sidebar');
                 var firstChannel = document.querySelector('.channel-item');
                 if (firstChannel) Navigation._setFocusTo(firstChannel);
