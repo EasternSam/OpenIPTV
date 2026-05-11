@@ -54,8 +54,8 @@ zsc5mFUY+A==</DigestValue>
 </Reference>
 <Reference URI="js%2Fapp.js">
 <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha512"></DigestMethod>
-<DigestValue>CsQNk1DkjeU+7fnLh+418WOJC8yrn2hk1aHIWgr+donZSKFtgGUDA+pVBs/vSrPg/ZUFMUs2y3k+
-Y/rr9QR6wA==</DigestValue>
+<DigestValue>eIpYNpYu/4GofQO6p+PZ6EVjuLEDcOgWmO5CBxxh8aGG4hsZUICEmNVEvMy/AQohZMtlZ9j7gygg
+R/qzrOyGmQ==</DigestValue>
 </Reference>
 <Reference URI="tizen_web_project.yaml">
 <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha512"></DigestMethod>
@@ -72,11 +72,11 @@ QY10fG1EWQ==</DigestValue>
 </Reference>
 </SignedInfo>
 <SignatureValue>
-UNOyz43U0PC/d7T5F+dXCOFpAQ3HXIIs4eck5f8ywWZUOv/2eHzkijyP/1Z22o1txQGQmhe29W8B
-G+0yFEWNoHQuhXASJ+y2SecGnEmSWLMRDfZblvWDKAORm/NrwApRyo6s5DXcx9fiDgrjJiV97RK/
-0H7kUaxyJir2bLdOVet/T17nhnpptc8pjtIU0t5e98J7MVDD24FqI+a2/8OCxPUp/U0w0Eso80MT
-riAcVjedGhgXh/Gq51pwpk/Zv3lqfmRzFIOprI1ROSUVTvAR/8iDhV7nfGdmihiUxPLbqAlMuZBw
-KIUXGgy8zetcpqdfbpW8ptZHZ7abu4pG5m24/w==
+USiXd8pQZVFW08Y2yX5PyJ2NOMezS49TPbnBgxTR4ierRETfpgyjFJS6YXjU3arCOA5j5XJdI3+i
+b797nMFciathO68Iyd2YgwAmEcIK2nTHnzraA0aq/rWtyDyRPUt+LvRNALZuepKXbxWxsSrUIEB8
+b/czMv4vXyzLcJeK2ITFN2d7aJxSzf2zAHuuETLRGTAemS3clOoykRt4vfXqtJAgeDryu/myF68R
+9VWKZ1wt8xY56qhG5uoPUhQ4Cuxjb5vhN5a+uPkeN+lHSvpl1JXwBxmupiqDO1zn7Y9Ir62IhEY7
+rfjdiCcn6Ln03tmRUEBZhDBB8A/rRJkLYRXNFQ==
 </SignatureValue>
 <KeyInfo>
 <X509Data>

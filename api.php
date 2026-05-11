@@ -281,7 +281,15 @@ if ($action === 'remote-sync' && $method === 'POST') {
     $file = getRemoteFile($code);
     if ($file && file_exists($file)) {
         $data = json_decode(file_get_contents($file), true);
-        $data['state'] = isset($body['state']) ? $body['state'] : null;
+        $newState = isset($body['state']) ? $body['state'] : [];
+        $oldState = isset($data['state']) ? $data['state'] : [];
+        
+        // Merge: keep existing channels if new state doesn't include them
+        if (!isset($newState['channels']) && isset($oldState['channels'])) {
+            $newState['channels'] = $oldState['channels'];
+        }
+        
+        $data['state'] = $newState;
         file_put_contents($file, json_encode($data));
     }
     echo json_encode(['success' => true]);

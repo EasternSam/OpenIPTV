@@ -34,8 +34,8 @@ QAar9VflxQ==</DigestValue>
 </Reference>
 <Reference URI="author-signature.xml">
 <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha512"></DigestMethod>
-<DigestValue>cuxxbGOn53JafmZ7jeZp91PsrQwm/RBskNh7xDSvnQJSJecxwM2oOmcxt9uIdW3OwAze5Rg66aGv
-Jp9qikprpQ==</DigestValue>
+<DigestValue>4ziLYv9cXVsyi8Z1/2poPiEDhTmG7HfFugnb5znaMbeNbjGQG++Xmuhx2OlKDxgO2Dl/8G5urm/Y
+vj/cFSFtOA==</DigestValue>
 </Reference>
 <Reference URI="config.xml">
 <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha512"></DigestMethod>
@@ -59,8 +59,8 @@ zsc5mFUY+A==</DigestValue>
 </Reference>
 <Reference URI="js%2Fapp.js">
 <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha512"></DigestMethod>
-<DigestValue>CsQNk1DkjeU+7fnLh+418WOJC8yrn2hk1aHIWgr+donZSKFtgGUDA+pVBs/vSrPg/ZUFMUs2y3k+
-Y/rr9QR6wA==</DigestValue>
+<DigestValue>eIpYNpYu/4GofQO6p+PZ6EVjuLEDcOgWmO5CBxxh8aGG4hsZUICEmNVEvMy/AQohZMtlZ9j7gygg
+R/qzrOyGmQ==</DigestValue>
 </Reference>
 <Reference URI="tizen_web_project.yaml">
 <DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha512"></DigestMethod>
@@ -77,11 +77,11 @@ GyvKX9Snig==</DigestValue>
 </Reference>
 </SignedInfo>
 <SignatureValue>
-KHHY6hMCv2bjQd8ytLdp3YotBT1QvxcmnKaQicO8RKWu+VXsWbq8BXXmUs8SPPU5WbfusL4oVKrh
-oHogec5UKy8jGFQ1Sx1BZtJD+odXbT4Z1sBpkmr6X6k6A/0AXRfFz/ir8jyO3+bUgNXYK/mDjouo
-NA7+5+jhA4lDbputWOM019myTsgHKb/73/6bTHsLhCpQ1zSDPEUSdCq/84RUZ9cGBzmjcKvAvdeD
-dF6m29tjw9xEceByeZ8aQXERSyMiiZPVR3QAkKbT864LpnxmNxISrlmpn5Psu3dTyd+UM/3nd+VF
-CvRnvZOXkoy36Q0EKdVY03J8ZuRvpvTIIAkkUA==
+KlHaNByQo0Wgief4HyzF8QifvK/ua4OA7QJlcVN0KBJpzs4UN+Wy9lae6Bpb0eUcSYlXjeR+bdW8
+Z1QISrV73t3uPkcDv47eg8FBY9ofNvUvrfpeKgxutFFBu8l2upwBpMam4iRQ841uqEzuGSxP3yDc
+13/1scKm2ubYTJlCPRCU1YmVf8AbUEDpj86RWbBpyY7yxgzrLX1vkk61/ToBf5+n4en+/sUR3zl0
+unl14WNC89uPXZxOWTSPNJnauGvIekkg8YWqYPS1iZTGqM2ddTZu5PYfeFottv5VallqO22T7j39
+Q3vsPPqw9Ne+0X091tXRNope/dptjg0g3G8efw==
 </SignatureValue>
 <KeyInfo>
 <X509Data>

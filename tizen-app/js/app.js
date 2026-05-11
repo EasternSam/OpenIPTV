@@ -1057,24 +1057,27 @@
         }
     }
 
+    var remoteChannelsSent = false;
+
     function remoteReportState() {
         if (!remoteCode) return;
         var state = {
-            channels: [],
             currentChannel: null,
             isPlaying: !video.paused || iframe.style.display === 'block'
         };
 
-        // Send channel list (max 500 for performance)
-        var maxCh = Math.min(channels.length, 500);
-        for (var i = 0; i < maxCh; i++) {
-            state.channels.push({
-                name: channels[i].name,
-                group: channels[i].group,
-                logo: channels[i].logo,
-                url: channels[i].url,
-                num: channels[i].num
-            });
+        // Send full channel list only once (first time after connect)
+        if (!remoteChannelsSent) {
+            state.channels = [];
+            for (var i = 0; i < channels.length; i++) {
+                state.channels.push({
+                    name: channels[i].name,
+                    group: channels[i].group,
+                    url: channels[i].url,
+                    num: channels[i].num
+                });
+            }
+            remoteChannelsSent = true;
         }
 
         if (currentIndex > -1 && channels[currentIndex]) {
@@ -1089,7 +1092,7 @@
         var xhr = new XMLHttpRequest();
         xhr.open('POST', SERVER + '/api.php?action=remote-sync', true);
         xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.timeout = 5000;
+        xhr.timeout = 10000;
         xhr.send(JSON.stringify({ code: remoteCode, state: state }));
     }
 
@@ -1151,6 +1154,7 @@
         if (remoteStateInterval) { clearInterval(remoteStateInterval); remoteStateInterval = null; }
         remoteCode = null;
         remotePhoneConnected = false;
+        remoteChannelsSent = false;
         remoteHidePairOverlay();
     }
 
