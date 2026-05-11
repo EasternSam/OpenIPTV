@@ -44,7 +44,8 @@
         CH_UP: 427, CH_DOWN: 428,
         NUM_0: 48, NUM_9: 57,
         ESC: 27, BACKSPACE: 8,
-        YELLOW: 405, KEY_F: 70
+        YELLOW: 405, KEY_F: 70,
+        GREEN: 404, BLUE: 406
     };
 
     // ═══════════════════════════════════════
@@ -63,7 +64,7 @@
 
         try {
             var keys = ['MediaPlay','MediaPause','MediaStop','MediaPlayPause',
-                        'ChannelUp','ChannelDown','ColorF0Yellow',
+                        'ChannelUp','ChannelDown','ColorF0Yellow','ColorF1Green',
                         '0','1','2','3','4','5','6','7','8','9'];
             for (var k = 0; k < keys.length; k++) {
                 tizen.tvinputdevice.registerKey(keys[k]);
@@ -564,6 +565,22 @@
     function handleKey(e) {
         var code = e.keyCode;
 
+        // ─── REMOTE PAIR OVERLAY ───
+        if (remotePairOverlayVisible) {
+            if (code === KEY.GREEN || code === KEY.BACK || code === KEY.RETURN || code === KEY.ESC || code === KEY.BACKSPACE) {
+                e.preventDefault();
+                remoteHidePairOverlay();
+            }
+            return;
+        }
+
+        // ─── GREEN KEY = Start Remote Pairing ───
+        if (code === KEY.GREEN) {
+            e.preventDefault();
+            remoteStartPairing();
+            return;
+        }
+
         // ─── CHANNEL LIST ───
         if (sidebarOpen && focusArea === 'sidebar') {
             if (code === KEY.DOWN) {
@@ -876,6 +893,249 @@
                 hideGrid();
             }
         }
+    }
+
+    // ═══════════════════════════════════════
+    // REMOTE CONTROL (Phone → TV via PHP polling)
+    // ═══════════════════════════════════════
+
+    var remoteCode = null;
+    var remotePollInterval = null;
+    var remoteStateInterval = null;
+    var remotePhoneConnected = false;
+    var remotePairOverlayVisible = false;
+
+    function remoteStartPairing() {
+        if (remotePairOverlayVisible) {
+            remoteHidePairOverlay();
+            return;
+        }
+
+        remoteStop();
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', SERVER + '/api.php?action=remote-pair', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.timeout = 8000;
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                try {
+                    var data = JSON.parse(xhr.responseText);
+                    remoteCode = data.code;
+                    remoteShowPairOverlay(remoteCode);
+                    remoteStartPolling(remoteCode);
+                } catch(e) {
+                    showRemoteToast('❌ Error al generar código');
+                }
+            } else {
+                showRemoteToast('❌ Error de servidor');
+            }
+        };
+        xhr.onerror = function() { showRemoteToast('❌ Sin conexión al servidor'); };
+        xhr.send('{}');
+    }
+
+    function remoteStartPolling(code) {
+        if (remotePollInterval) clearInterval(remotePollInterval);
+
+        remotePollInterval = setInterval(function() {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', SERVER + '/api.php?action=remote-tv-poll&code=' + code, true);
+            xhr.timeout = 5000;
+            xhr.onload = function() {
+                if (xhr.status !== 200) return;
+                try {
+                    var data = JSON.parse(xhr.responseText);
+
+                    if (data.phoneConnected && !remotePhoneConnected) {
+                        remotePhoneConnected = true;
+                        remoteUpdateOverlayStatus(true);
+                        showRemoteToast('📱 Control remoto conectado');
+                        remoteReportState();
+                    }
+
+                    if (data.commands && data.commands.length > 0) {
+                        for (var i = 0; i < data.commands.length; i++) {
+                            remoteHandleCommand(data.commands[i].command, data.commands[i].data);
+                        }
+                    }
+                } catch(e) {}
+            };
+            xhr.send();
+        }, 1500);
+
+        // Report state every 3 seconds
+        if (remoteStateInterval) clearInterval(remoteStateInterval);
+        remoteStateInterval = setInterval(function() {
+            if (remotePhoneConnected) remoteReportState();
+        }, 3000);
+    }
+
+    function remoteHandleCommand(command, data) {
+        switch(command) {
+            case 'navigate':
+                if (data && data.direction) {
+                    var keyMap = { up: KEY.UP, down: KEY.DOWN, left: KEY.LEFT, right: KEY.RIGHT };
+                    var fakeCode = keyMap[data.direction];
+                    if (fakeCode) {
+                        handleKey({ keyCode: fakeCode, preventDefault: function(){} });
+                    }
+                }
+                break;
+            case 'enter':
+                handleKey({ keyCode: KEY.ENTER, preventDefault: function(){} });
+                break;
+            case 'back':
+                handleKey({ keyCode: KEY.BACK, preventDefault: function(){} });
+                break;
+            case 'play-pause':
+                if (video.paused) video.play().catch(function(){}); else video.pause();
+                break;
+            case 'stop':
+                video.pause(); video.src = '';
+                iframe.src = ''; iframe.style.display = 'none';
+                break;
+            case 'channel-up':
+                nextChannel();
+                break;
+            case 'channel-down':
+                prevChannel();
+                break;
+            case 'number':
+                if (data && typeof data.number !== 'undefined') handleNumber(data.number);
+                break;
+            case 'play-channel':
+                if (data && data.url) {
+                    for (var i = 0; i < channels.length; i++) {
+                        if (channels[i].url === data.url) {
+                            currentIndex = i;
+                            showOSD(channels[i]);
+                            startPlayback(channels[i]);
+                            hideSidebar();
+                            if (gridOpen) hideGrid();
+                            break;
+                        }
+                    }
+                }
+                break;
+            case 'volume-up':
+            case 'volume-down':
+                // Volume control is hardware-level on Samsung TV
+                break;
+        }
+    }
+
+    function remoteReportState() {
+        if (!remoteCode) return;
+        var state = {
+            channels: [],
+            currentChannel: null,
+            isPlaying: !video.paused || iframe.style.display === 'block'
+        };
+
+        // Send channel list (max 500 for performance)
+        var maxCh = Math.min(channels.length, 500);
+        for (var i = 0; i < maxCh; i++) {
+            state.channels.push({
+                name: channels[i].name,
+                group: channels[i].group,
+                logo: channels[i].logo,
+                url: channels[i].url,
+                num: channels[i].num
+            });
+        }
+
+        if (currentIndex > -1 && channels[currentIndex]) {
+            state.currentChannel = {
+                name: channels[currentIndex].name,
+                group: channels[currentIndex].group,
+                url: channels[currentIndex].url,
+                num: channels[currentIndex].num
+            };
+        }
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', SERVER + '/api.php?action=remote-sync', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.timeout = 5000;
+        xhr.send(JSON.stringify({ code: remoteCode, state: state }));
+    }
+
+    function remoteShowPairOverlay(code) {
+        var existing = document.getElementById('remote-pair-overlay');
+        if (existing) existing.parentNode.removeChild(existing);
+
+        var overlay = document.createElement('div');
+        overlay.id = 'remote-pair-overlay';
+        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;' +
+            'background:rgba(6,6,26,0.92);display:flex;align-items:center;justify-content:center;' +
+            'backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);animation:fadeIn 0.3s ease;';
+
+        var digits = code.split('').map(function(d) {
+            return '<span style="display:inline-flex;align-items:center;justify-content:center;' +
+                'width:100px;height:120px;font-size:64px;font-weight:800;color:#fff;' +
+                'background:rgba(99,102,241,0.15);border:2px solid rgba(99,102,241,0.4);' +
+                'border-radius:16px;margin:0 8px;">' + d + '</span>';
+        }).join('');
+
+        overlay.innerHTML =
+            '<div style="text-align:center;max-width:600px;">' +
+                '<div style="font-size:48px;margin-bottom:16px;">📱</div>' +
+                '<div style="font-size:28px;font-weight:700;color:#f0f0ff;margin-bottom:8px;">Conectar Control Remoto</div>' +
+                '<div style="font-size:18px;color:rgba(240,240,255,0.5);margin-bottom:32px;">Abre en tu celular:</div>' +
+                '<div style="font-size:22px;color:rgba(167,139,250,1);font-weight:600;margin-bottom:32px;' +
+                    'background:rgba(99,102,241,0.1);padding:14px 24px;border-radius:12px;border:1px solid rgba(99,102,241,0.2);">' +
+                    SERVER + '/remote</div>' +
+                '<div style="font-size:16px;color:rgba(240,240,255,0.4);margin-bottom:16px;">e ingresa este código:</div>' +
+                '<div id="remote-pair-digits" style="display:flex;justify-content:center;margin-bottom:24px;">' + digits + '</div>' +
+                '<div id="remote-pair-status" style="font-size:16px;color:rgba(240,240,255,0.3);">⏳ Esperando conexión...</div>' +
+                '<div style="font-size:14px;color:rgba(240,240,255,0.2);margin-top:24px;">Presiona 🟢 Verde o BACK para cerrar</div>' +
+            '</div>';
+
+        document.body.appendChild(overlay);
+        remotePairOverlayVisible = true;
+    }
+
+    function remoteUpdateOverlayStatus(connected) {
+        var status = document.getElementById('remote-pair-status');
+        if (status) {
+            if (connected) {
+                status.innerHTML = '✅ <span style="color:#4ade80;font-weight:600;">¡Celular conectado!</span>';
+                setTimeout(function() {
+                    remoteHidePairOverlay();
+                }, 2000);
+            }
+        }
+    }
+
+    function remoteHidePairOverlay() {
+        var overlay = document.getElementById('remote-pair-overlay');
+        if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        remotePairOverlayVisible = false;
+    }
+
+    function remoteStop() {
+        if (remotePollInterval) { clearInterval(remotePollInterval); remotePollInterval = null; }
+        if (remoteStateInterval) { clearInterval(remoteStateInterval); remoteStateInterval = null; }
+        remoteCode = null;
+        remotePhoneConnected = false;
+        remoteHidePairOverlay();
+    }
+
+    function showRemoteToast(msg) {
+        var existing = document.getElementById('remote-toast');
+        if (existing) existing.parentNode.removeChild(existing);
+        var toast = document.createElement('div');
+        toast.id = 'remote-toast';
+        toast.style.cssText = 'position:fixed;top:40px;right:40px;z-index:10000;' +
+            'background:rgba(12,12,40,0.95);border:1px solid rgba(99,102,241,0.4);' +
+            'border-radius:16px;padding:18px 36px;font-size:22px;color:#f0f0ff;' +
+            'backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);animation:fadeIn 0.25s ease;';
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(function() {
+            if (toast.parentNode) toast.parentNode.removeChild(toast);
+        }, 3000);
     }
 
     document.addEventListener('DOMContentLoaded', init);

@@ -212,7 +212,6 @@ if ($action === 'upload' && $method === 'POST') {
         echo json_encode(['error' => 'Upload failed']);
     }
     exit;
-    exit;
 }
 
 // ═══════════════════════════════════════════════
