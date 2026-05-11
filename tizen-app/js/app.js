@@ -73,6 +73,14 @@
 
         document.addEventListener('keydown', handleKey);
 
+        // Remote button handler
+        var btnRemote = document.getElementById('btn-remote');
+        if (btnRemote) {
+            btnRemote.addEventListener('click', function() {
+                remoteStartPairing();
+            });
+        }
+
         setTimeout(function() {
             document.getElementById('splash').style.display = 'none';
             document.getElementById('main').style.display = 'block';
@@ -555,6 +563,9 @@
                 if (focusedIndex < 0) focusedIndex = 0;
                 setFocus(btns[focusedIndex]);
             }
+        } else if (focusArea === 'remote-btn') {
+            var remBtn = document.getElementById('btn-remote');
+            if (remBtn) setFocus(remBtn);
         }
     }
 
@@ -581,6 +592,23 @@
             return;
         }
 
+        // ─── REMOTE BUTTON ───
+        if (sidebarOpen && focusArea === 'remote-btn') {
+            if (code === KEY.UP) {
+                e.preventDefault();
+                focusArea = 'sidebar';
+                var items = channelList.querySelectorAll('.ch-item');
+                focusedIndex = items.length > 0 ? items.length - 1 : 0;
+                updateFocus();
+            } else if (code === KEY.ENTER) {
+                e.preventDefault();
+                remoteStartPairing();
+            } else if (code === KEY.BACK || code === KEY.RETURN || code === KEY.ESC || code === KEY.BACKSPACE) {
+                e.preventDefault(); hideSidebar();
+            }
+            return;
+        }
+
         // ─── CHANNEL LIST ───
         if (sidebarOpen && focusArea === 'sidebar') {
             if (code === KEY.DOWN) {
@@ -591,6 +619,10 @@
                 } else if (renderPage < totalPages - 1) {
                     renderPage++; renderChannels();
                     focusedIndex = 0; updateFocus();
+                } else {
+                    // Last item on last page → focus remote button
+                    focusArea = 'remote-btn';
+                    updateFocus();
                 }
             } else if (code === KEY.UP) {
                 e.preventDefault();
