@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════════════════════
-   OpenIPTV — Mobile Control Center v5
-   Full TV control: channels, playback, playlists, settings
+   OpenIPTV — Mobile Control Center v8
+   PHP Polling API — Compatible with Tizen Standalone App
    ══════════════════════════════════════════════════════════════ */
 
 const Remote = {
@@ -9,14 +9,12 @@ const Remote = {
     connected: false,
     stateInterval: null,
     channels: [],
-    favorites: [],
-    recents: [],
-    channelHealth: {},
     groups: [],
     currentTab: 'channels',
     currentCategory: 'all',
     currentGroup: null,
-    tvState: {},
+    currentChannel: null,
+    isPlaying: false,
 
     init() {
         this._blockZoom();
@@ -25,8 +23,6 @@ const Remote = {
         this._bindRemoteEvents();
         this._bindChannelTab();
         this._bindPlaylistTab();
-        this._bindSettingsTab();
-        this._bindKeyboard();
 
         const saved = localStorage.getItem('openiptv_remote_code');
         if (saved) this._tryReconnect(saved);
@@ -101,7 +97,7 @@ const Remote = {
             const r = await fetch(`/api/remote/check?code=${code}`);
             const d = await r.json();
             if (!d.valid) {
-                err.textContent = '❌ Código inválido';
+                err.textContent = '❌ Código inválido o expirado';
                 btn.disabled = false;
                 btn.textContent = 'Conectar';
                 this._vibrate([50, 50, 50]);
@@ -123,8 +119,9 @@ const Remote = {
 
             this._startStatePolling();
             this._vibrate(100);
+            this._toast('✅ Conectado a la TV');
         } catch(e) {
-            err.textContent = '❌ Error de conexión';
+            err.textContent = '❌ Error de conexión al servidor';
             btn.disabled = false;
             btn.textContent = 'Conectar';
         }
@@ -152,7 +149,7 @@ const Remote = {
     },
 
     /* ═══════════════════════════════
-       BOTTOM NAV (4 tabs)
+       BOTTOM NAV
        ═══════════════════════════════ */
     _bindBottomNav() {
         document.querySelectorAll('.r-nav-item').forEach(btn => {
@@ -167,7 +164,6 @@ const Remote = {
                 document.getElementById(`tab-${tab}`)?.classList.add('active');
 
                 if (tab === 'channels') this._renderChannels();
-                if (tab === 'playlists') this._renderPlaylists();
             });
         });
     },
@@ -177,7 +173,6 @@ const Remote = {
        ═══════════════════════════════ */
     _bindRemoteEvents() {
         document.querySelectorAll('[data-cmd]').forEach(btn => {
-            if (btn.classList.contains('r-kb-sc')) return;
             if (btn.classList.contains('r-filter-pill')) return;
             if (btn.classList.contains('r-danger-btn')) return;
 
@@ -195,16 +190,6 @@ const Remote = {
         });
 
         document.getElementById('btn-disconnect')?.addEventListener('click', () => this._disconnect());
-
-        // Volume slider
-        const volSlider = document.getElementById('r-volume-slider');
-        if (volSlider) {
-            volSlider.addEventListener('input', () => {
-                const val = parseInt(volSlider.value, 10);
-                document.getElementById('r-vol-label').textContent = val + '%';
-                this._sendCommand('set-volume', { volume: val });
-            });
-        }
     },
 
     async _sendCommand(command, data = {}) {
@@ -237,14 +222,13 @@ const Remote = {
 
     _handleTVDisconnect() {
         this._disconnect();
-        document.getElementById('pair-error').textContent = '📺 La TV se desconectó';
+        document.getElementById('pair-error').textContent = '📺 La TV se desconectó. Genera un nuevo código.';
     },
 
     /* ═══════════════════════════════
        CHANNELS TAB
        ═══════════════════════════════ */
     _bindChannelTab() {
-        // Category pills
         document.querySelectorAll('.r-filter-pill').forEach(pill => {
             pill.addEventListener('click', () => {
                 this.currentCategory = pill.dataset.category;
@@ -255,10 +239,13 @@ const Remote = {
             });
         });
 
-        // Search
         const search = document.getElementById('r-ch-search');
         if (search) {
-            search.addEventListener('input', () => this._renderChannels());
+            let timer;
+            search.addEventListener('input', () => {
+                clearTimeout(timer);
+                timer = setTimeout(() => this._renderChannels(), 200);
+            });
         }
     },
 
@@ -268,13 +255,6 @@ const Remote = {
 
         const search = (document.getElementById('r-ch-search')?.value || '').trim().toLowerCase();
         let chs = [...this.channels];
-
-        // Category filter
-        if (this.currentCategory === 'favorites') {
-            chs = chs.filter(c => this.favorites.includes(c.url));
-        } else if (this.currentCategory === 'recent') {
-            chs = chs.filter(c => this.recents.includes(c.url));
-        }
 
         // Group filter
         if (this.currentGroup) {
@@ -286,7 +266,7 @@ const Remote = {
             chs = chs.filter(c =>
                 c.name.toLowerCase().includes(search) ||
                 (c.group || '').toLowerCase().includes(search) ||
-                c.number.toString() === search
+                (c.num || '').toString() === search
             );
         }
 
@@ -297,50 +277,57 @@ const Remote = {
             list.innerHTML = `<div class="r-ch-empty-state">
                 <div class="r-ch-empty-icon">📡</div>
                 <p>Esperando canales de la TV...</p>
-                <span class="r-ch-empty-sub">Asegúrate de tener una playlist cargada</span>
+                <span class="r-ch-empty-sub">Asegúrate de tener una playlist cargada en la TV</span>
             </div>`;
             return;
         }
 
         if (chs.length === 0) {
             list.innerHTML = `<div class="r-ch-empty-state">
-                <div class="r-ch-empty-icon">📭</div>
+                <div class="r-ch-empty-icon">🔍</div>
                 <p>Sin resultados</p>
+                <span class="r-ch-empty-sub">Intenta con otro término de búsqueda</span>
             </div>`;
             return;
         }
 
-        const currentUrl = this.tvState.channelUrl || null;
-        const max = 150;
-        list.innerHTML = chs.slice(0, max).map(ch => {
+        const currentUrl = this.currentChannel?.url || null;
+        const max = 200;
+
+        // Channel count header
+        let html = `<div class="r-ch-count-bar">${chs.length} canal${chs.length !== 1 ? 'es' : ''}${this.currentGroup ? ' en ' + this._esc(this.currentGroup) : ''}</div>`;
+
+        html += chs.slice(0, max).map(ch => {
             const playing = ch.url === currentUrl ? 'playing' : '';
-            const isFav = this.favorites.includes(ch.url) ? 'is-fav' : '';
-            const health = this.channelHealth[ch.url] || 'unknown';
             const logoHtml = ch.logo
                 ? `<img class="r-ch-logo" src="${this._esc(ch.logo)}" alt="" loading="lazy" onerror="this.style.display='none'">`
-                : '';
-            return `<div class="r-ch-item ${playing} ${isFav}" data-url="${this._esc(ch.url)}">
-                <span class="r-ch-health r-ch-health-${health}" title="${health === 'ok' ? 'Funciona' : health === 'error' ? 'Sin señal' : 'No probado'}"></span>
-                <span class="r-ch-num">${ch.number}</span>
+                : `<div class="r-ch-initial">${this._esc((ch.name || '?').substring(0, 2).toUpperCase())}</div>`;
+            return `<div class="r-ch-item ${playing}" data-url="${this._esc(ch.url)}">
+                <span class="r-ch-num">${ch.num || ''}</span>
                 ${logoHtml}
                 <div class="r-ch-info">
                     <span class="r-ch-name">${this._esc(ch.name)}</span>
                     <span class="r-ch-group">${this._esc(ch.group || '')}</span>
                 </div>
-                <span class="r-ch-fav-icon">⭐</span>
+                ${playing ? '<span class="r-ch-playing-badge">▶</span>' : ''}
             </div>`;
         }).join('');
 
         if (chs.length > max) {
-            list.innerHTML += `<p style="text-align:center;padding:12px;color:var(--txt3);font-size:11px">
-                Mostrando ${max} de ${chs.length}. Usa la búsqueda.</p>`;
+            html += `<p class="r-ch-truncated">Mostrando ${max} de ${chs.length} canales. Usa la búsqueda para encontrar más.</p>`;
         }
+
+        list.innerHTML = html;
 
         list.querySelectorAll('.r-ch-item').forEach(item => {
             item.addEventListener('click', () => {
                 this._sendCommand('play-channel', { url: item.dataset.url });
                 this._vibrate(50);
                 this._toast('📺 Cambiando canal...');
+
+                // Immediate visual feedback
+                list.querySelectorAll('.r-ch-item').forEach(i => i.classList.remove('playing'));
+                item.classList.add('playing');
             });
         });
     },
@@ -355,14 +342,17 @@ const Remote = {
 
         if (groups.length === 0) { bar.innerHTML = ''; return; }
 
-        bar.innerHTML = groups.map(g => {
+        let html = `<button class="r-group-tag ${!this.currentGroup ? 'active' : ''}" data-group="">Todos</button>`;
+        html += groups.map(g => {
             const active = this.currentGroup === g ? 'active' : '';
             return `<button class="r-group-tag ${active}" data-group="${this._esc(g)}">${this._esc(g)}</button>`;
         }).join('');
 
+        bar.innerHTML = html;
+
         bar.querySelectorAll('.r-group-tag').forEach(tag => {
             tag.addEventListener('click', () => {
-                this.currentGroup = this.currentGroup === tag.dataset.group ? null : tag.dataset.group;
+                this.currentGroup = tag.dataset.group || null;
                 this._renderChannels();
             });
         });
@@ -387,109 +377,6 @@ const Remote = {
         });
     },
 
-    _renderPlaylists() {
-        const list = document.getElementById('r-pl-list');
-        if (!list) return;
-
-        const playlists = this.tvState.playlists || [];
-
-        if (playlists.length === 0) {
-            list.innerHTML = '<div class="r-pl-empty"><p>No hay playlists guardadas</p></div>';
-        } else {
-            list.innerHTML = playlists.map(pl => `
-                <div class="r-pl-item ${pl.loaded ? 'loaded' : ''}">
-                    <span class="r-pl-item-status">${pl.loaded ? '✅' : '⬜'}</span>
-                    <div class="r-pl-item-info">
-                        <span class="r-pl-item-name">${this._esc(pl.name)}</span>
-                        <span class="r-pl-item-url">${this._esc(pl.url)}</span>
-                    </div>
-                    <button class="r-pl-item-del" data-url="${this._esc(pl.url)}">×</button>
-                </div>
-            `).join('');
-
-            list.querySelectorAll('.r-pl-item-del').forEach(btn => {
-                btn.addEventListener('click', e => {
-                    e.stopPropagation();
-                    this._sendCommand('remove-playlist', { url: btn.dataset.url });
-                    this._toast('🗑️ Eliminando playlist...');
-                });
-            });
-        }
-
-        // Stats
-        const totalChannels = this.channels.length;
-        const totalGroups = new Set(this.channels.map(c => c.group).filter(Boolean)).size;
-        document.getElementById('r-pl-stat-lists').textContent = playlists.length;
-        document.getElementById('r-pl-stat-channels').textContent = totalChannels;
-        document.getElementById('r-pl-stat-groups').textContent = totalGroups;
-    },
-
-    /* ═══════════════════════════════
-       SETTINGS TAB
-       ═══════════════════════════════ */
-    _bindSettingsTab() {
-        // Settings selects — send to TV on change
-        ['r-set-buffer', 'r-set-reconnect', 'r-set-retries', 'r-set-hide-controls', 'r-set-clock'].forEach(id => {
-            document.getElementById(id)?.addEventListener('change', () => {
-                this._sendSettingsToTV();
-            });
-        });
-
-        // Danger buttons
-        document.querySelectorAll('.r-danger-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const cmd = btn.dataset.cmd;
-                this._sendCommand(cmd, {});
-                this._vibrate(50);
-                this._toast('✅ Comando enviado');
-            });
-        });
-    },
-
-    _sendSettingsToTV() {
-        const get = id => document.getElementById(id)?.value;
-        this._sendCommand('update-settings', {
-            bufferSize: parseInt(get('r-set-buffer'), 10),
-            autoReconnect: get('r-set-reconnect') === 'true',
-            retries: parseInt(get('r-set-retries'), 10),
-            hideControlsDelay: parseInt(get('r-set-hide-controls'), 10),
-            showClock: get('r-set-clock') === 'true',
-        });
-        this._toast('⚙️ Configuración enviada a la TV');
-    },
-
-    /* ═══════════════════════════════
-       KEYBOARD
-       ═══════════════════════════════ */
-    _bindKeyboard() {
-        document.getElementById('r-kb-send')?.addEventListener('click', () => {
-            const input = document.getElementById('r-kb-input');
-            if (input && input.value) {
-                this._sendCommand('type-text', { text: input.value });
-                input.value = '';
-                this._vibrate(50);
-            }
-        });
-
-        document.getElementById('r-kb-clear')?.addEventListener('click', () => {
-            this._sendCommand('clear-text', {});
-            document.getElementById('r-kb-input').value = '';
-        });
-
-        document.getElementById('r-kb-enter')?.addEventListener('click', () => {
-            this._sendCommand('type-key', { key: 'Enter' });
-            this._vibrate(30);
-        });
-
-        document.querySelectorAll('.r-kb-sc').forEach(btn => {
-            btn.addEventListener('click', () => {
-                this._sendCommand('type-key', { key: btn.dataset.key });
-                this._vibrate(25);
-                this._flash(btn);
-            });
-        });
-    },
-
     /* ═══════════════════════════════
        TV STATE POLLING
        ═══════════════════════════════ */
@@ -505,86 +392,65 @@ const Remote = {
             if (r.ok) {
                 const state = await r.json();
                 this._updateFromState(state);
+            } else if (r.status === 404) {
+                // Session expired
+                this._handleTVDisconnect();
             }
         } catch(e) {}
     },
 
     _updateFromState(state) {
-        this.tvState = state;
+        if (!state || Object.keys(state).length === 0) return;
 
-        // Channel name in header
-        const name = document.getElementById('r-channel-name');
-        if (name) name.textContent = state.channelName || '—';
+        // Update current channel info
+        if (state.currentChannel) {
+            this.currentChannel = state.currentChannel;
+            const name = document.getElementById('r-channel-name');
+            if (name) name.textContent = state.currentChannel.name || '—';
 
-        // Now playing card
-        const npName = document.getElementById('r-np-card-name');
-        const npNum = document.getElementById('r-np-ch-number');
-        const npGroup = document.getElementById('r-np-card-group');
-        if (npName) npName.textContent = state.channelName || 'Ningún canal';
-        if (npNum) npNum.textContent = state.channelNumber || '—';
-        if (npGroup) npGroup.textContent = state.channelGroup || '';
-
-        // Volume
-        if (state.volume != null) {
-            const slider = document.getElementById('r-volume-slider');
-            const label = document.getElementById('r-vol-label');
-            if (slider && !slider.matches(':active')) slider.value = state.volume;
-            if (label) label.textContent = state.volume + '%';
+            // Now playing card
+            const npName = document.getElementById('r-np-card-name');
+            const npNum = document.getElementById('r-np-ch-number');
+            const npGroup = document.getElementById('r-np-card-group');
+            if (npName) npName.textContent = state.currentChannel.name || 'Ningún canal';
+            if (npNum) npNum.textContent = state.currentChannel.num || '—';
+            if (npGroup) npGroup.textContent = state.currentChannel.group || '';
+        } else {
+            this.currentChannel = null;
         }
 
-        // Channels
+        // Playing state
+        this.isPlaying = state.isPlaying || false;
+        const signalText = document.getElementById('r-np-signal-text');
+        const signalBadge = document.getElementById('r-np-signal-badge');
+        if (signalText) signalText.textContent = this.isPlaying ? 'Reproduciendo' : 'Detenido';
+        if (signalBadge) {
+            signalBadge.className = 'r-np-signal-badge ' + (this.isPlaying ? 'signal-good' : 'signal-none');
+        }
+
+        // Channels list
         if (state.channels && state.channels.length > 0) {
             if (this.channels.length !== state.channels.length) {
                 this.channels = state.channels;
                 if (this.currentTab === 'channels') this._renderChannels();
+                this._toast(`📺 ${this.channels.length} canales sincronizados`);
             }
         }
 
-        // Favorites & recents
-        if (state.favorites) this.favorites = state.favorites;
-        if (state.recents) this.recents = state.recents;
-        if (state.channelHealth) this.channelHealth = state.channelHealth;
-
-        // Favorite button
-        const favBtn = document.getElementById('r-np-fav-btn');
-        if (favBtn && state.channelUrl) {
-            favBtn.classList.toggle('is-fav', this.favorites.includes(state.channelUrl));
-        }
-
-        // Signal quality
-        this._updateSignalUI(state.signalQuality || 'none', state.playing);
-    },
-
-    _updateSignalUI(quality, isPlaying) {
-        // Header signal bars
+        // Signal bars
         const signal = document.getElementById('r-signal');
         if (signal) {
             signal.className = 'r-signal';
-            if (isPlaying) signal.classList.add(`signal-${quality}`);
+            if (this.isPlaying) signal.classList.add('signal-good');
         }
 
-        // Now-playing badge
-        const badge = document.getElementById('r-np-signal-badge');
-        const dot = badge?.querySelector('.r-np-signal-dot');
-        const text = document.getElementById('r-np-signal-text');
-        if (badge) {
-            badge.className = 'r-np-signal-badge';
-            if (!isPlaying) {
-                if (text) text.textContent = 'Sin señal';
-                badge.classList.add('signal-none');
-            } else if (quality === 'good') {
-                if (text) text.textContent = 'Excelente';
-                badge.classList.add('signal-good');
-            } else if (quality === 'medium') {
-                if (text) text.textContent = 'Regular';
-                badge.classList.add('signal-medium');
-            } else if (quality === 'poor') {
-                if (text) text.textContent = 'Débil';
-                badge.classList.add('signal-poor');
-            } else {
-                if (text) text.textContent = 'Conectando...';
-                badge.classList.add('signal-none');
-            }
+        // Stats
+        const statChannels = document.getElementById('r-pl-stat-channels');
+        const statGroups = document.getElementById('r-pl-stat-groups');
+        if (statChannels) statChannels.textContent = this.channels.length;
+        if (statGroups) {
+            const gs = new Set(this.channels.map(c => c.group).filter(Boolean));
+            statGroups.textContent = gs.size;
         }
     },
 

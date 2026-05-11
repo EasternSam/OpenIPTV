@@ -10,12 +10,12 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="description" content="OpenIPTV — Centro de control total para tu Smart TV">
-    <title>OpenIPTV — Control Total</title>
+    <meta name="description" content="WilsonTV — Control remoto para tu Smart TV">
+    <title>WilsonTV — Control Remoto</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/remote.css?v=7">
+    <link rel="stylesheet" href="css/remote.css?v=8">
 </head>
 <body>
 
@@ -31,8 +31,8 @@
                     <polygon points="26,18 26,38 42,28" fill="url(#rg)"/>
                     <rect x="20" y="52" width="24" height="3" rx="1.5" fill="url(#rg)" opacity="0.6"/>
                 </svg>
-                <h1>Open<span>IPTV</span></h1>
-                <p class="pair-sub">CENTRO DE CONTROL</p>
+                <h1>Wilson<span>TV</span></h1>
+                <p class="pair-sub">CONTROL REMOTO</p>
             </div>
             <div class="pair-form">
                 <label>Ingresa el código de tu TV</label>
@@ -44,6 +44,7 @@
                 </div>
                 <button id="btn-connect" class="btn-connect" disabled>Conectar</button>
                 <p id="pair-error" class="pair-error"></p>
+                <p class="pair-hint">Presiona 📱 <strong>Conectar Celular</strong> en la barra lateral de tu TV para obtener el código</p>
             </div>
         </div>
     </div>
@@ -77,19 +78,12 @@
 
             <!-- ═══ TAB: CANALES ═══ -->
             <div id="tab-channels" class="r-tab-panel active">
-                <!-- Category Filter Pills -->
-                <div class="r-filter-bar">
-                    <button class="r-filter-pill active" data-category="all">📺 Todos</button>
-                    <button class="r-filter-pill" data-category="favorites">⭐ Favoritos</button>
-                    <button class="r-filter-pill" data-category="recent">🕐 Recientes</button>
-                </div>
-
                 <!-- Search -->
                 <div class="r-search-wrap">
                     <svg class="r-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
                         <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                     </svg>
-                    <input type="text" id="r-ch-search" placeholder="Buscar canales..." autocomplete="off">
+                    <input type="text" id="r-ch-search" placeholder="Buscar entre miles de canales..." autocomplete="off">
                 </div>
 
                 <!-- Group Tags -->
@@ -121,16 +115,6 @@
                             <span class="r-np-signal-text" id="r-np-signal-text">Sin señal</span>
                         </div>
                     </div>
-                    <!-- Volume Slider -->
-                    <div class="r-volume-wrap">
-                        <button class="r-vol-icon-btn" data-cmd="mute">
-                            <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                            </svg>
-                        </button>
-                        <input type="range" id="r-volume-slider" class="r-volume-slider" min="0" max="100" value="80">
-                        <span class="r-vol-label" id="r-vol-label">80%</span>
-                    </div>
                 </div>
 
                 <!-- D-Pad -->
@@ -158,50 +142,27 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="20" height="20"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
                         <span>Atrás</span>
                     </button>
-                    <button class="r-act" data-cmd="toggle-sidebar">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-                            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-                        </svg>
-                        <span>Menú</span>
+                    <button class="r-act" data-cmd="play-pause">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><polygon points="6,3 20,12 6,21"/></svg>
+                        <span>Play</span>
                     </button>
-                    <button class="r-act" data-cmd="fullscreen">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-                            <polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/>
-                            <line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>
-                        </svg>
-                        <span>Full</span>
-                    </button>
-                    <button class="r-act" data-cmd="favorite">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/>
-                        </svg>
-                        <span>Fav</span>
+                    <button class="r-act" data-cmd="stop">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+                        <span>Stop</span>
                     </button>
                 </div>
 
-                <!-- Playback Row -->
+                <!-- Channel & Number Controls -->
                 <div class="r-playback">
                     <div class="r-pbl">
                         <button class="r-ch-btn" data-cmd="channel-down">CH−</button>
                         <span class="r-pbl-label">Canal</span>
                         <button class="r-ch-btn" data-cmd="channel-up">CH+</button>
                     </div>
-                    <button class="r-play" data-cmd="play-pause" aria-label="Play/Pause">
-                        <svg viewBox="0 0 24 24" fill="currentColor" width="36" height="36"><polygon points="6,3 20,12 6,21"/></svg>
-                    </button>
-                    <div class="r-pbl">
-                        <button class="r-vol-btn" data-cmd="volume-down">VOL−</button>
-                        <button class="r-mute-btn" data-cmd="mute" aria-label="Mute">
-                            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                            </svg>
-                        </button>
-                        <button class="r-vol-btn" data-cmd="volume-up">VOL+</button>
-                    </div>
                 </div>
 
-                <!-- Number Pad (collapsible) -->
-                <details class="r-numpad-wrap">
+                <!-- Number Pad -->
+                <details class="r-numpad-wrap" open>
                     <summary class="r-numpad-toggle">Teclado Numérico</summary>
                     <div class="r-numpad">
                         <button class="r-num" data-cmd="number" data-num="1">1</button>
@@ -213,44 +174,14 @@
                         <button class="r-num" data-cmd="number" data-num="7">7</button>
                         <button class="r-num" data-cmd="number" data-num="8">8</button>
                         <button class="r-num" data-cmd="number" data-num="9">9</button>
-                        <button class="r-num r-num-special" data-cmd="load-url">📋</button>
+                        <button class="r-num r-num-special" data-cmd="back">⬅️</button>
                         <button class="r-num" data-cmd="number" data-num="0">0</button>
-                        <button class="r-num r-num-special" data-cmd="settings">⚙️</button>
+                        <button class="r-num r-num-special" data-cmd="enter">OK</button>
                     </div>
                 </details>
-            </div>
-
-            <!-- ═══ TAB: PLAYLISTS ═══ -->
-            <div id="tab-playlists" class="r-tab-panel">
-                <!-- Add Playlist Form -->
-                <div class="r-pl-add-card">
-                    <h3>Cargar Playlist M3U</h3>
-                    <div class="r-pl-input-group">
-                        <input type="url" id="r-pl-url-input" placeholder="https://ejemplo.com/playlist.m3u" autocomplete="off">
-                        <button id="r-pl-load-btn" class="r-pl-load-btn">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="20" height="20">
-                                <path d="M12 5v14M5 12h14"/>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Saved Playlists List -->
-                <div class="r-pl-section">
-                    <h4>Playlists Guardadas</h4>
-                    <div class="r-pl-list" id="r-pl-list">
-                        <div class="r-pl-empty">
-                            <p>No hay playlists guardadas</p>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Stats -->
                 <div class="r-pl-stats" id="r-pl-stats">
-                    <div class="r-pl-stat">
-                        <span class="r-pl-stat-val" id="r-pl-stat-lists">0</span>
-                        <span class="r-pl-stat-label">Listas</span>
-                    </div>
                     <div class="r-pl-stat">
                         <span class="r-pl-stat-val" id="r-pl-stat-channels">0</span>
                         <span class="r-pl-stat-label">Canales</span>
@@ -261,99 +192,15 @@
                     </div>
                 </div>
             </div>
-
-            <!-- ═══ TAB: AJUSTES ═══ -->
-            <div id="tab-settings" class="r-tab-panel">
-                <div class="r-settings-group">
-                    <h4>🎬 Reproducción</h4>
-                    <div class="r-setting-item">
-                        <label>Buffer de video</label>
-                        <select id="r-set-buffer" class="r-setting-select">
-                            <option value="10">10s (Bajo)</option>
-                            <option value="20">20s (Normal)</option>
-                            <option value="30" selected>30s (Alto)</option>
-                            <option value="60">60s (Máximo)</option>
-                        </select>
-                    </div>
-                    <div class="r-setting-item">
-                        <label>Auto-reconectar</label>
-                        <select id="r-set-reconnect" class="r-setting-select">
-                            <option value="true" selected>Activado</option>
-                            <option value="false">Desactivado</option>
-                        </select>
-                    </div>
-                    <div class="r-setting-item">
-                        <label>Intentos reconexión</label>
-                        <select id="r-set-retries" class="r-setting-select">
-                            <option value="3">3 intentos</option>
-                            <option value="5" selected>5 intentos</option>
-                            <option value="10">10 intentos</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="r-settings-group">
-                    <h4>🖥️ Interfaz TV</h4>
-                    <div class="r-setting-item">
-                        <label>Ocultar controles</label>
-                        <select id="r-set-hide-controls" class="r-setting-select">
-                            <option value="3">3s</option>
-                            <option value="5" selected>5s</option>
-                            <option value="10">10s</option>
-                            <option value="0">Nunca</option>
-                        </select>
-                    </div>
-                    <div class="r-setting-item">
-                        <label>Mostrar reloj</label>
-                        <select id="r-set-clock" class="r-setting-select">
-                            <option value="true" selected>Sí</option>
-                            <option value="false">No</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="r-settings-group">
-                    <h4>⌨️ Teclado Remoto</h4>
-                    <div class="r-kb-panel-inline">
-                        <p class="r-kb-hint">Escribe texto y se enviará a la TV</p>
-                        <textarea id="r-kb-input" class="r-kb-input" placeholder="Escribe texto..." rows="2" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
-                        <div class="r-kb-actions">
-                            <button class="r-kb-btn" id="r-kb-send">Enviar</button>
-                            <button class="r-kb-btn r-kb-clear" id="r-kb-clear">Borrar</button>
-                            <button class="r-kb-btn r-kb-enter" id="r-kb-enter">Enter ↵</button>
-                        </div>
-                        <div class="r-kb-shortcuts">
-                            <button class="r-kb-sc" data-cmd="type-key" data-key="Backspace">⌫</button>
-                            <button class="r-kb-sc" data-cmd="type-key" data-key="Tab">Tab</button>
-                            <button class="r-kb-sc" data-cmd="type-key" data-key="Escape">Esc</button>
-                            <button class="r-kb-sc" data-cmd="type-key" data-key=" ">Space</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="r-settings-group r-settings-danger">
-                    <h4>🗑️ Datos</h4>
-                    <button class="r-danger-btn" data-cmd="clear-favorites">Borrar Favoritos</button>
-                    <button class="r-danger-btn" data-cmd="clear-recents">Borrar Recientes</button>
-                    <button class="r-danger-btn" data-cmd="clear-all">Borrar Todo</button>
-                </div>
-
-                <div class="r-settings-footer">
-                    <p>OpenIPTV v2.0</p>
-                    <p>Centro de Control Total</p>
-                </div>
-            </div>
         </div>
 
         <!-- ─── Bottom Navigation ─── -->
         <nav class="r-bottom-nav">
             <button class="r-nav-item active" data-tab="channels">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
-                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
-                    <line x1="8" y1="21" x2="16" y2="21"/>
-                    <line x1="12" y1="17" x2="12" y2="21"/>
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                 </svg>
-                <span>Canales</span>
+                <span>Buscar</span>
             </button>
             <button class="r-nav-item" data-tab="control">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
@@ -361,20 +208,6 @@
                     <polygon points="10,8 16,12 10,16" fill="currentColor"/>
                 </svg>
                 <span>Control</span>
-            </button>
-            <button class="r-nav-item" data-tab="playlists">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
-                    <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
-                    <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
-                </svg>
-                <span>Playlists</span>
-            </button>
-            <button class="r-nav-item" data-tab="settings">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
-                    <circle cx="12" cy="12" r="3"/>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                </svg>
-                <span>Ajustes</span>
             </button>
         </nav>
     </div>
@@ -384,6 +217,6 @@
         <span id="r-toast-msg"></span>
     </div>
 
-    <script src="js/remote.js?v=5"></script>
+    <script src="js/remote.js?v=8"></script>
 </body>
 </html>
