@@ -212,6 +212,105 @@ if ($action === 'upload' && $method === 'POST') {
         echo json_encode(['error' => 'Upload failed']);
     }
     exit;
+    exit;
+}
+
+// ═══════════════════════════════════════════════
+// REMOTE CONTROL POLLING API (PHP FALLBACK)
+// ═══════════════════════════════════════════════
+
+function getRemoteFile($code) {
+    $code = preg_replace('/[^0-9]/', '', $code);
+    if (empty($code)) return null;
+    $dir = __DIR__ . '/data/remote';
+    if (!is_dir($dir)) mkdir($dir, 0755, true);
+    return $dir . '/' . $code . '.json';
+}
+
+if ($action === 'remote-pair' && $method === 'POST') {
+    $code = str_pad((string)rand(0, 9999), 4, '0', STR_PAD_LEFT);
+    $file = getRemoteFile($code);
+    file_put_contents($file, json_encode(['phoneConnected' => false, 'commands' => [], 'state' => null]));
+    echo json_encode(['code' => $code]);
+    exit;
+}
+
+if ($action === 'remote-tv-poll' && $method === 'GET') {
+    $code = isset($_GET['code']) ? $_GET['code'] : '';
+    $file = getRemoteFile($code);
+    if (!$file || !file_exists($file)) { http_response_code(404); echo json_encode(['error' => 'not found']); exit; }
+    $data = json_decode(file_get_contents($file), true);
+    
+    if (count($data['commands']) > 0) {
+        $outData = $data;
+        $data['commands'] = [];
+        file_put_contents($file, json_encode($data));
+        echo json_encode(['phoneConnected' => $outData['phoneConnected'], 'commands' => $outData['commands']]);
+    } else {
+        echo json_encode(['phoneConnected' => $data['phoneConnected'], 'commands' => []]);
+    }
+    exit;
+}
+
+if ($action === 'remote-phone-connect' && $method === 'POST') {
+    $body = getInput();
+    $code = isset($body['code']) ? $body['code'] : '';
+    $file = getRemoteFile($code);
+    if (!$file || !file_exists($file)) { http_response_code(404); echo json_encode(['error' => 'not found']); exit; }
+    $data = json_decode(file_get_contents($file), true);
+    $data['phoneConnected'] = true;
+    file_put_contents($file, json_encode($data));
+    echo json_encode(['success' => true]);
+    exit;
+}
+
+if ($action === 'remote-command' && $method === 'POST') {
+    $body = getInput();
+    $code = isset($body['code']) ? $body['code'] : '';
+    $file = getRemoteFile($code);
+    if (!$file || !file_exists($file)) { http_response_code(404); exit; }
+    $data = json_decode(file_get_contents($file), true);
+    $data['commands'][] = ['command' => $body['command'], 'data' => isset($body['data']) ? $body['data'] : null];
+    file_put_contents($file, json_encode($data));
+    echo json_encode(['success' => true]);
+    exit;
+}
+
+if ($action === 'remote-sync' && $method === 'POST') {
+    $body = getInput();
+    $code = isset($body['code']) ? $body['code'] : '';
+    $file = getRemoteFile($code);
+    if ($file && file_exists($file)) {
+        $data = json_decode(file_get_contents($file), true);
+        $data['state'] = isset($body['state']) ? $body['state'] : null;
+        file_put_contents($file, json_encode($data));
+    }
+    echo json_encode(['success' => true]);
+    exit;
+}
+
+if ($action === 'remote-check' && $method === 'GET') {
+    $code = isset($_GET['code']) ? $_GET['code'] : '';
+    $file = getRemoteFile($code);
+    if ($file && file_exists($file)) {
+        echo json_encode(['valid' => true]);
+    } else {
+        echo json_encode(['valid' => false]);
+    }
+    exit;
+}
+
+if ($action === 'remote-tv-state' && $method === 'GET') {
+    $code = isset($_GET['code']) ? $_GET['code'] : '';
+    $file = getRemoteFile($code);
+    if (!$file || !file_exists($file)) { http_response_code(404); exit; }
+    $data = json_decode(file_get_contents($file), true);
+    if ($data['state']) {
+        echo json_encode($data['state']);
+    } else {
+        echo json_encode([]);
+    }
+    exit;
 }
 
 http_response_code(404);

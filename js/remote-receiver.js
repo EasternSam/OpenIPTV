@@ -36,43 +36,45 @@ const RemoteReceiver = {
         }
     },
 
-    /* ─── SSE Connection ─── */
+    /* ─── SSE Connection (Converted to Polling for PHP) ─── */
     _connectSSE(code) {
-        if (this.eventSource) {
-            this.eventSource.close();
-            this.eventSource = null;
+        if (this.pollInterval) {
+            clearInterval(this.pollInterval);
+            this.pollInterval = null;
         }
 
-        this.eventSource = new EventSource(`/api/remote/tv-connect?code=${code}`);
         this.connected = true;
-
-        this.eventSource.addEventListener('connected', () => {
-            console.log('📺 SSE connected');
-        });
-
-        this.eventSource.addEventListener('phone-connected', () => {
-            console.log('📱 Phone connected!');
-            this.phoneConnected = true;
-            this._updateOverlayStatus(true);
-            this._enterRemoteMode();
-            if (typeof App !== 'undefined') App._toast('📱 Control remoto conectado');
-
-            // Send channel list to phone
-            setTimeout(() => this._reportState(), 500);
-        });
-
-        this.eventSource.addEventListener('command', (e) => {
+        
+        this.pollInterval = setInterval(async () => {
             try {
-                const { command, data } = JSON.parse(e.data);
-                this._handleCommand(command, data);
-            } catch (err) {
-                console.warn('Invalid command:', err);
-            }
-        });
+                const res = await fetch(`/api/remote/tv-connect?code=${code}`);
+                if (res.status !== 200) return;
+                const data = await res.json();
 
-        this.eventSource.onerror = () => {
-            console.warn('SSE reconnecting...');
-        };
+                if (data.phoneConnected && !this.phoneConnected) {
+                    console.log('📱 Phone connected!');
+                    this.phoneConnected = true;
+                    this._updateOverlayStatus(true);
+                    this._enterRemoteMode();
+                    if (typeof App !== 'undefined') App._toast('📱 Control remoto conectado');
+                    
+                    // Send channel list to phone
+                    setTimeout(() => this._reportState(), 500);
+                }
+
+                if (data.commands && data.commands.length > 0) {
+                    data.commands.forEach(cmd => {
+                        try {
+                            this._handleCommand(cmd.command, cmd.data);
+                        } catch (err) {
+                            console.warn('Invalid command:', err);
+                        }
+                    });
+                }
+            } catch (e) {
+                // Ignore network errors on poll
+            }
+        }, 1500);
 
         this._startStateReporting();
     },
@@ -437,7 +439,7 @@ const RemoteReceiver = {
 
     /* ─── Stop ─── */
     stop() {
-        if (this.eventSource) { this.eventSource.close(); this.eventSource = null; }
+        if (this.pollInterval) { clearInterval(this.pollInterval); this.pollInterval = null; }
         clearInterval(this.stateReportInterval);
         this.code = null;
         this.connected = false;
