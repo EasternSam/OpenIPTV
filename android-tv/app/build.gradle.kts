@@ -9,8 +9,8 @@ android {
         applicationId = "com.example.wilsontv"
         minSdk = 21
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 3
+        versionName = "1.0.2"
     }
 
     buildTypes {
