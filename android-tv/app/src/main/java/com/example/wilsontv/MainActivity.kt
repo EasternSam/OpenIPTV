@@ -23,8 +23,16 @@ class MainActivity : Activity() {
         val settings = webView.settings
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
+        settings.databaseEnabled = true
         settings.allowFileAccess = true
         settings.allowContentAccess = true
+
+        // Viewport scaling settings to prevent "giant elements" issue
+        settings.useWideViewPort = true
+        settings.loadWithOverviewMode = true
+
+        // Fix autoplay video blocking in WebViews
+        settings.mediaPlaybackRequiresUserGesture = false
 
         // CORS support for local files making requests to https://iptv.90s.agency
         settings.allowFileAccessFromFileURLs = true
