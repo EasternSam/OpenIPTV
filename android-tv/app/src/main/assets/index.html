@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, initial-scale=1.0">
+    <title>WilsonTV</title>
+    <link rel="stylesheet" href="css/app.css">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.7/dist/hls.min.js"></script>
+</head>
+<body>
+    <!-- SPLASH -->
+    <div id="splash" class="splash">
+        <div class="splash-inner">
+            <div class="splash-icon">▶</div>
+            <div class="splash-title">Wilson<span>TV</span></div>
+            <div class="splash-bar"><div class="splash-progress"></div></div>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="main" class="screen" style="display:none">
+        <!-- Video fills the background -->
+        <video id="video" autoplay playsinline></video>
+        <iframe id="iframe" allowfullscreen allow="autoplay; fullscreen" frameborder="0"></iframe>
+
+        <!-- Loading / No Playlists Message -->
+        <div id="loading-msg" class="loading-msg">
+            <div class="loading-spinner"></div>
+            <div>Conectando...</div>
+        </div>
+
+        <!-- Channel Info OSD (top) -->
+        <div id="osd" class="osd" style="display:none">
+            <div class="osd-num" id="osd-num"></div>
+            <div class="osd-info">
+                <div class="osd-name" id="osd-name"></div>
+                <div class="osd-group" id="osd-group"></div>
+            </div>
+        </div>
+
+        <!-- Channel List Sidebar -->
+        <div id="sidebar" class="sidebar" style="display:none">
+            <div class="sidebar-header">
+                <h2>📺 WilsonTV</h2>
+                <span id="ch-count" class="ch-count"></span>
+            </div>
+            <div class="sidebar-groups" id="groups"></div>
+            <div class="sidebar-list" id="channel-list"></div>
+            <div class="sidebar-footer">
+                <button id="btn-remote" class="sidebar-remote-btn focusable" style="
+                    background:linear-gradient(135deg,rgba(99,102,241,0.25),rgba(167,139,250,0.15));
+                    border:1px solid rgba(99,102,241,0.4);color:#a78bfa;font-size:18px;font-weight:600;
+                    padding:10px 20px;border-radius:12px;cursor:pointer;margin-bottom:8px;width:100%;
+                    display:flex;align-items:center;justify-content:center;gap:8px;
+                ">📱 Conectar Celular</button>
+                <div style="font-size:13px;color:rgba(240,240,255,0.3);">OK = Seleccionar │ 🟡 = Favorito │ ▲▼ Navegar</div>
+            </div>
+        </div>
+
+        <!-- Channel Grid Browser (fullscreen) -->
+        <div id="grid-browser" class="grid-browser" style="display:none">
+            <div class="grid-topbar">
+                <div class="grid-title">📺 WilsonTV</div>
+                <div class="grid-info" id="grid-info">0 canales</div>
+            </div>
+            <div class="grid-groups" id="grid-groups"></div>
+            <div class="grid-container" id="grid-container"></div>
+            <div class="grid-footer">
+                OK = Ver canal &nbsp;│&nbsp; 🟡 = Favorito &nbsp;│&nbsp; 🟢 = Celular &nbsp;│&nbsp; ◄►▲▼ = Navegar &nbsp;│&nbsp; Back = Cerrar
+            </div>
+        </div>
+
+        <!-- Number Input OSD -->
+        <div id="num-osd" class="num-osd" style="display:none">
+            <span id="num-display"></span>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

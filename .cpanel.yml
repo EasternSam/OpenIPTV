@@ -11,3 +11,4 @@ deployment:
     - /bin/cp api.php $DEPLOYPATH/
     - /bin/cp server.js $DEPLOYPATH/
     - /bin/cp .htaccess $DEPLOYPATH/ 2>/dev/null; true
+    - /bin/cp wilsontv.apk $DEPLOYPATH/ 2>/dev/null; true
