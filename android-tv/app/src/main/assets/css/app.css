@@ -18,7 +18,7 @@
 }
 
 html, body {
-    width: 1920px; height: 1080px;
+    width: 100%; height: 100%;
     overflow: hidden; background: var(--bg);
     color: var(--text);
     font-family: 'Samsung Sharp Sans', 'SamsungOne', -apple-system, sans-serif;
@@ -101,7 +101,7 @@ html, body {
 /* ─── SIDEBAR ─── */
 .sidebar {
     position: absolute; top: 0; left: 0;
-    width: 520px; height: 1080px; z-index: 200;
+    width: 520px; height: 100%; z-index: 200;
     background: linear-gradient(135deg, rgba(8,8,30,0.97), rgba(12,12,40,0.99));
     border-right: 1px solid rgba(129,140,248,0.1);
     backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
@@ -268,7 +268,7 @@ html, body {
    GRID BROWSER (Fullscreen Channel Grid)
    ═══════════════════════════════════════════════ */
 .grid-browser {
-    position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; z-index: 250;
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 250;
     background: linear-gradient(180deg, #06061a 0%, #0a0a2e 100%);
     animation: fadeIn 0.25s ease;
     overflow: hidden;
